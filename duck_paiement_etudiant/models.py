@@ -2,7 +2,7 @@
 from django.db import models
 import unicodedata
 from .managers import BordereauManager, BordereauAuditeurManager
-from django_apogee.models import InsAdmEtp as INS_ADM_ETP_IED, AnneeUni, Individu as INDIVIDU
+from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 
 
 class Banque(models.Model):
@@ -229,10 +229,10 @@ class PaiementBackoffice(models.Model):
     """ PaiementBackoffice
         C'est la class qui gére les paiements
     """
-    etape = models.ForeignKey(INS_ADM_ETP_IED, related_name="paiements")
+    etape = models.ForeignKey(InsAdmEtp, related_name="paiements", null=True)
     # cle primaire composite
     cod_anu = models.ForeignKey(AnneeUni, verbose_name=u"Code Annee Universitaire", null=True)
-    cod_ind = models.ForeignKey(INDIVIDU, db_column='COD_IND', null=True)
+    cod_ind = models.ForeignKey(Individu, db_column='COD_IND', null=True)
     cod_etp = models.CharField(u"Code Etape", max_length=8, null=True,
                                db_column="COD_ETP")
     cod_vrs_vet = models.CharField(u"(COPIED)Numero Version Etape", max_length=3, db_column="COD_VRS_VET", null=True)
@@ -269,22 +269,22 @@ class PaiementBackoffice(models.Model):
     def __unicode__(self):
         return str(self.num_paiement)
 
-    def save(self, force_insert=False, force_update=False, using=None):
-        if not self.num_paiement:
-            self.num_paiement = self.etape.paiements.count() + 1
-        if self.type == 'C':  # il s'aggit d'un chèque                    x
-            if not self.bordereau_id:  # il n'y a pas encore de bordereau attribuer
-                self.bordereau = Bordereau.objects.last_bordereau(self.num_paiement)
-
-        if self.__original_is_ok != self.is_ok:
-            pass
-        if not self.cod_anu:
-            self.cod_anu = self.etape.COD_ANU
-            self.cod_ind = self.etape.COD_IND
-            self.cod_etp = self.etape.COD_ETP
-            self.cod_vrs_vet = self.etape.COD_VRS_VET
-            self.num_occ_iae = self.etape.NUM_OCC_IAE
-        super(PaiementBackoffice, self).save(force_insert, force_update, using)
+    # def save(self, force_insert=False, force_update=False, using=None):
+    #     if not self.num_paiement:
+    #         self.num_paiement = self.etape.paiements.count() + 1
+    #     if self.type == 'C':  # il s'aggit d'un chèque                    x
+    #         if not self.bordereau_id:  # il n'y a pas encore de bordereau attribuer
+    #             self.bordereau = Bordereau.objects.last_bordereau(self.num_paiement)
+    #
+    #     if self.__original_is_ok != self.is_ok:
+    #         pass
+    #     if not self.cod_anu:
+    #         self.cod_anu = self.etape.COD_ANU
+    #         self.cod_ind = self.etape.COD_IND
+    #         self.cod_etp = self.etape.COD_ETP
+    #         self.cod_vrs_vet = self.etape.COD_VRS_VET
+    #         self.num_occ_iae = self.etape.NUM_OCC_IAE
+    #     super(PaiementBackoffice, self).save(force_insert, force_update, using)
 
     # def envoi_mail_relance(self):
     #
