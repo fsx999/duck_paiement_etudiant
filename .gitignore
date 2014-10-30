@@ -1,0 +1,7 @@
+*.log
+*.pot
+*.pyc
+.idea
+.vagrant
+local_settings.py
+bo_local_settings.py
