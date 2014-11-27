@@ -348,6 +348,8 @@ class AuditeurLibreApogee(models.Model):
     birthday = models.DateField("Date de naissance")
     annee = models.ForeignKey(AnneeUni)
 
+    def get_email(self, annee):
+        return self.personal_email
     # def remontee_claroline(self, cours=None, envoi_mail=True, mail=None, email_perso=None):
     #     etapes = ['L1NPSY']
     #     user_foad = FoadUser.objects.using('foad').filter(username=str(self.code_ied))
