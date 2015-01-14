@@ -37,6 +37,11 @@ class Bordereau(models.Model):
     envoi_mail = models.BooleanField(u"envoie mail", default=False)
     objects = BordereauManager()
     auditeur = BordereauAuditeurManager()
+    type_paiement = models.CharField('type de paiement du bordereau',
+                                     choices=(('C', u'Chèque'),
+                                              ('B', u'Chèque de banque'),
+                                              ('E', u"Chèque étranger"),
+                                              ('V', u'Virement')))
     type_bordereau = models.CharField("type de bordereau", choices=(
         ('N', u'Normal'),
         ('A', u'Auditeur Libre')),
