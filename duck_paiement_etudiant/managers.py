@@ -1,6 +1,6 @@
 # coding=utf-8
 from django.db import models
-from apogee.models import AnneeUni
+from django_apogee.models import AnneeUni
 __author__ = 'paul'
 
 
@@ -10,7 +10,7 @@ class BordereauManager(models.Manager):
         return super(BordereauManager, self).get_query_set().filter(type_bordereau='N')
 
     def last_bordereau(self, num_paiement):
-        from inscription.models.individu_models import AnneeEnCour
+        from duck_inscription.models.individu_models import Annee
         annee = AnneeEnCour.objects.get(annee_en_cours=True).annee
         year = AnneeUni.objects.get(cod_anu=annee)
         try:

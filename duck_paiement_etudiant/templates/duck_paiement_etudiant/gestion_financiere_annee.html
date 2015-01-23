@@ -1,0 +1,32 @@
+{% extends "xadmin/base_site.html" %}
+{% load lib_inscription %}
+{% block nav_title %}Statistique Apogee{% endblock %}
+{% block content %}
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th></th>
+            <th colspan="7">Apogee</th>
+        </tr>
+        <tr>
+            <th></th>
+            <th>Incrit</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for etape in etapes %}
+        {% with stat=etape.stat_apogee %}
+        <tr>
+            <td>{{ etape.label }}</td>
+            <td><a href=" {% url 'xadmin:extraction_apogee' etape.annee.cod_anu etape.cod_etp %}"> {{ stat.nb_inscrit }}</a></td>
+        <tr>
+        {% endwith %}
+        {% endfor %}
+        <tr>
+            <td>Totaux</td>
+            <td>{% tag_totaux etapes 'stat_apogee' 'nb_inscrit' %}</td>
+        </tr>
+
+        </tbody>
+    </table>
+{% endblock %}
