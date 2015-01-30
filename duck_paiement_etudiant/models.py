@@ -1,8 +1,18 @@
 # -*- coding: utf-8 -*-
+
 from django.db import models
 import unicodedata
+from django.utils.encoding import python_2_unicode_compatible
 from .managers import BordereauManager, BordereauAuditeurManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
+
+@python_2_unicode_compatible
+class AnneeUniPaiement(models.Model):
+    cod_anu = models.IntegerField(primary_key=True)
+    ouverture_paiement = models.CharField(max_length=1, choices=(('O', 'Ouverte'), ('F', 'Fermé')), default=False)
+
+    def __str__(self):
+        return '{}/{}'.format(self.cod_anu, self.cod_anu+1)
 
 
 class Banque(models.Model):
@@ -32,7 +42,7 @@ class Bordereau(models.Model):
     num_bordereau = models.IntegerField("Numéro bordereau")
     num_paiement = models.IntegerField(u"Numéro de paiement", blank=True, null=True)
     cloture = models.BooleanField(u"bordereau cloturé", default=False, blank=True)
-    annee = models.ForeignKey(AnneeUni, default=2012)
+    annee = models.ForeignKey(AnneeUniPaiement)
     date_cloture = models.DateField(u"Date de cloture du bordereau", blank=True, null=True)
     envoi_mail = models.BooleanField(u"envoie mail", default=False)
     objects = BordereauManager()
@@ -41,7 +51,8 @@ class Bordereau(models.Model):
                                      choices=(('C', u'Chèque'),
                                               ('B', u'Chèque de banque'),
                                               ('E', u"Chèque étranger"),
-                                              ('V', u'Virement')))
+                                              ('V', u'Virement')),
+                                     max_length=1)
     type_bordereau = models.CharField("type de bordereau", choices=(
         ('N', u'Normal'),
         ('A', u'Auditeur Libre')),
@@ -236,7 +247,7 @@ class PaiementBackoffice(models.Model):
     """
     etape = models.ForeignKey(InsAdmEtp, related_name="paiements", null=True)
     # cle primaire composite
-    cod_anu = models.ForeignKey(AnneeUni, verbose_name=u"Code Annee Universitaire", null=True)
+    cod_anu = models.ForeignKey(AnneeUniPaiement, verbose_name=u"Code Annee Universitaire", null=True, db_column='COD_ANU')
     cod_ind = models.ForeignKey(Individu, db_column='COD_IND', null=True)
     cod_etp = models.CharField(u"Code Etape", max_length=8, null=True,
                                db_column="COD_ETP")
@@ -340,146 +351,146 @@ class PaiementBackoffice(models.Model):
     #     f.close()
 
 
-class AuditeurLibreApogee(models.Model):
-    last_name = models.CharField("Nom", max_length=30)
-    first_name = models.CharField("Prenom", max_length=30)
-    personal_email = models.EmailField("email personnel", max_length=200)
-    address = models.CharField("adresse", max_length=200)
-    phone_number = models.CharField("numéro de téléphone", max_length=15, null=True, default=None)
-    code_ied = models.CharField('code ied', max_length=8)
-    status_modified = models.BooleanField(default=True)
-    access_claroline = models.BooleanField("Accès à claroline", default=True)
-    date_registration_current_year = models.DateField(auto_now_add=True)
-    birthday = models.DateField("Date de naissance")
-    annee = models.ForeignKey(AnneeUni)
-
-    def get_email(self, annee):
-        return self.personal_email
-    # def remontee_claroline(self, cours=None, envoi_mail=True, mail=None, email_perso=None):
-    #     etapes = ['L1NPSY']
-    #     user_foad = FoadUser.objects.using('foad').filter(username=str(self.code_ied))
-    #     if not user_foad.count():
-    #         user_foad = FoadUser.objects.using('foad').filter(username=self.code_ied)
-    #     if user_foad.count():
-    #         user_foad = user_foad[0]
-    #     else:
-    #         user_foad = FoadUser(username=self.code_ied)
-    #     if not self.code_ied:
-    #         raise Exception(u"Il n'y a pas de code étudiant")
-    #     user_foad.email = str(self.code_ied) + '@foad.iedparis8.net'
-    #     user_foad.nom = self.last_name
-    #     user_foad.prenom = self.first_name
-    #     user_foad.statut = 5
-    #     user_foad.official_code = self.code_ied
-    #     user_foad.password = make_ied_password(self.code_ied[:-1])
-    #     user_foad.save(using='foad')  # création de l'user
-    #     for e in etapes:
-    #         dips = FoadDip.objects.using('foad').filter(user_id=user_foad.user_id, dip_id=e)
-    #         if not dips.count():
-    #             FoadDip.objects.using('foad').create(user_id=user_foad.user_id, dip_id=e)
-    #         if cours:
-    #             for cour in cours[e]:
-    #                 t = FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
-    #                                                                      code_cours=cour,
-    #                                                                      statut=5)
-    #     FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
-    #                                                      code_cours="EEIED",
-    #                                                      statut=5)
-    #     FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
-    #                                                      code_cours="RD",
-    #                                                      statut=5)
-    #     FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
-    #                                                      code_cours="ISIED",
-    #                                                      statut=5)
-    #     new = FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
-    #                                                            code_cours="EU",
-    #                                                            statut=5)[1]
-    #     if not CompteMail.objects.using('vpopmail').filter(pw_name=user_foad.username):
-    #         cod = user_foad.prenom.replace(" ", "\\ ").replace("'", "\\'") + '-' + user_foad.nom.replace(" ", "\\ ").replace("'", "\\'")
-    #         cod = unicodedata.normalize('NFKD', unicode(cod)).encode("ascii", "ignore").upper()
-    #         command = u'/home/ied-www/bin/vadduser  -q 500000000 -c "%s" %s %s' % (
-    #             cod,
-    #             user_foad.email,
-    #             user_foad.password
-    #         )
-    #
-    #         os.system(command)
-    #     if not email_perso:
-    #         email = [self.personal_email, user_foad.email] if not settings.DEBUG else ['paul.guichon@iedparis8.net']
-    #     else:
-    #         email = [email_perso]
-    #     if envoi_mail:
-    #         if not mail:
-    #             mail = Mail.objects.get(name='remontee')
-    #         message = mail.make_message(
-    #             recipients=email,
-    #             context={
-    #                 'etape': etapes[0],
-    #                 'prenom': user_foad.prenom,
-    #                 'username': user_foad.username,
-    #                 'password': user_foad.password,
-    #                 'email': user_foad.email,
-    #
-    #                 })
-    #         message.send()
-    #     self.status_modified = False
-    #     self.save()
-    #     return 1
-
-    def __unicode__(self):
-        return self.last_name + ' ' + self.first_name
-
-    class Meta:
-        db_table = u"auditeurs_libre"
-        verbose_name = u"auditeur libre"
-        verbose_name_plural = u"auditeurs libres"
-
-
-class PaiementAuditeurBackoffice(models.Model):
-    """ PaiementBackoffice
-        C'est la class qui gére les paiements
-    """
-    etape = models.ForeignKey(AuditeurLibreApogee, related_name="paiements")
-    type = models.CharField("type paiement", choices=(('C', u'Chéque'),
-                                                      ('B', u'Chèque de banque'),
-                                                      ('E', u"Chèque étranger"),
-                                                      ('V', u'Virement')),
-                            max_length=1)
-    num_cheque = models.CharField("Numéro de chéque", max_length=30, null=True, blank=True)
-    nom_banque = models.CharField("Nom de la banque", max_length=60, null=True, blank=True)
-    nom_banque_bis = models.ForeignKey(Banque, null=True, blank=True, verbose_name=u"Nom de la banque")
-    autre_payeur = models.CharField("Autre payeur", max_length=30, null=True, blank=True)
-    somme = models.FloatField("Somme")
-    date = models.DateField("date prévue", null=True, blank=True)
-    date_virement = models.DateField("Date du virement effectué", null=True, blank=True)
-    date_saisi = models.DateField(auto_now=True)
-    bordereau = models.ForeignKey(Bordereau, verbose_name="Bordereau", null=True, blank=True)  # les bordereaux ne
-    # concerne que les chèques
-    is_ok = models.BooleanField(u"Impayé", default=False)
-    num_paiement = models.IntegerField(u"Numéro de paiement", blank=True, null=True)
-    observation = models.CharField(u"Observation", max_length=100, blank=True, null=True)
-
-    class Meta:
-        db_table = u"pal_paiement_auditeur_backoffice"
-        verbose_name = "Paiement"
-        verbose_name_plural = "Paiements"
-
-    def __unicode__(self):
-        return str(self.num_paiement)
-
-    def save(self, force_insert=False, force_update=False, using=None):
-        if not self.num_paiement:
-            self.num_paiement = self.etape.paiements.count() + 1
-        if self.type == 'C':  # il s'aggit d'un chèque
-            if not self.bordereau_id:  # il n'y a pas encore de bordereau attribuer
-                self.bordereau = Bordereau.auditeur.last_bordereau(self.num_paiement)
-
-        super(PaiementAuditeurBackoffice, self).save(force_insert, force_update, using)
-
-
-class BordereauAuditeur(Bordereau):
-    class Meta:
-        proxy = True
-        app_label = "backoffice"
-        verbose_name = "bordereau auditeur"
-        verbose_name_plural = "bordereaux auditeur"
+# class AuditeurLibreApogee(models.Model):
+#     last_name = models.CharField("Nom", max_length=30)
+#     first_name = models.CharField("Prenom", max_length=30)
+#     personal_email = models.EmailField("email personnel", max_length=200)
+#     address = models.CharField("adresse", max_length=200)
+#     phone_number = models.CharField("numéro de téléphone", max_length=15, null=True, default=None)
+#     code_ied = models.CharField('code ied', max_length=8)
+#     status_modified = models.BooleanField(default=True)
+#     access_claroline = models.BooleanField("Accès à claroline", default=True)
+#     date_registration_current_year = models.DateField(auto_now_add=True)
+#     birthday = models.DateField("Date de naissance")
+#     annee = models.ForeignKey(AnneeUni)
+#
+#     def get_email(self, annee):
+#         return self.personal_email
+#     # def remontee_claroline(self, cours=None, envoi_mail=True, mail=None, email_perso=None):
+#     #     etapes = ['L1NPSY']
+#     #     user_foad = FoadUser.objects.using('foad').filter(username=str(self.code_ied))
+#     #     if not user_foad.count():
+#     #         user_foad = FoadUser.objects.using('foad').filter(username=self.code_ied)
+#     #     if user_foad.count():
+#     #         user_foad = user_foad[0]
+#     #     else:
+#     #         user_foad = FoadUser(username=self.code_ied)
+#     #     if not self.code_ied:
+#     #         raise Exception(u"Il n'y a pas de code étudiant")
+#     #     user_foad.email = str(self.code_ied) + '@foad.iedparis8.net'
+#     #     user_foad.nom = self.last_name
+#     #     user_foad.prenom = self.first_name
+#     #     user_foad.statut = 5
+#     #     user_foad.official_code = self.code_ied
+#     #     user_foad.password = make_ied_password(self.code_ied[:-1])
+#     #     user_foad.save(using='foad')  # création de l'user
+#     #     for e in etapes:
+#     #         dips = FoadDip.objects.using('foad').filter(user_id=user_foad.user_id, dip_id=e)
+#     #         if not dips.count():
+#     #             FoadDip.objects.using('foad').create(user_id=user_foad.user_id, dip_id=e)
+#     #         if cours:
+#     #             for cour in cours[e]:
+#     #                 t = FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
+#     #                                                                      code_cours=cour,
+#     #                                                                      statut=5)
+#     #     FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
+#     #                                                      code_cours="EEIED",
+#     #                                                      statut=5)
+#     #     FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
+#     #                                                      code_cours="RD",
+#     #                                                      statut=5)
+#     #     FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
+#     #                                                      code_cours="ISIED",
+#     #                                                      statut=5)
+#     #     new = FoadCourUser.objects.using('foad').get_or_create(user_id=user_foad.user_id,
+#     #                                                            code_cours="EU",
+#     #                                                            statut=5)[1]
+#     #     if not CompteMail.objects.using('vpopmail').filter(pw_name=user_foad.username):
+#     #         cod = user_foad.prenom.replace(" ", "\\ ").replace("'", "\\'") + '-' + user_foad.nom.replace(" ", "\\ ").replace("'", "\\'")
+#     #         cod = unicodedata.normalize('NFKD', unicode(cod)).encode("ascii", "ignore").upper()
+#     #         command = u'/home/ied-www/bin/vadduser  -q 500000000 -c "%s" %s %s' % (
+#     #             cod,
+#     #             user_foad.email,
+#     #             user_foad.password
+#     #         )
+#     #
+#     #         os.system(command)
+#     #     if not email_perso:
+#     #         email = [self.personal_email, user_foad.email] if not settings.DEBUG else ['paul.guichon@iedparis8.net']
+#     #     else:
+#     #         email = [email_perso]
+#     #     if envoi_mail:
+#     #         if not mail:
+#     #             mail = Mail.objects.get(name='remontee')
+#     #         message = mail.make_message(
+#     #             recipients=email,
+#     #             context={
+#     #                 'etape': etapes[0],
+#     #                 'prenom': user_foad.prenom,
+#     #                 'username': user_foad.username,
+#     #                 'password': user_foad.password,
+#     #                 'email': user_foad.email,
+#     #
+#     #                 })
+#     #         message.send()
+#     #     self.status_modified = False
+#     #     self.save()
+#     #     return 1
+#
+#     def __unicode__(self):
+#         return self.last_name + ' ' + self.first_name
+#
+#     class Meta:
+#         db_table = u"auditeurs_libre"
+#         verbose_name = u"auditeur libre"
+#         verbose_name_plural = u"auditeurs libres"
+#
+#
+# class PaiementAuditeurBackoffice(models.Model):
+#     """ PaiementBackoffice
+#         C'est la class qui gére les paiements
+#     """
+#     etape = models.ForeignKey(AuditeurLibreApogee, related_name="paiements")
+#     type = models.CharField("type paiement", choices=(('C', u'Chéque'),
+#                                                       ('B', u'Chèque de banque'),
+#                                                       ('E', u"Chèque étranger"),
+#                                                       ('V', u'Virement')),
+#                             max_length=1)
+#     num_cheque = models.CharField("Numéro de chéque", max_length=30, null=True, blank=True)
+#     nom_banque = models.CharField("Nom de la banque", max_length=60, null=True, blank=True)
+#     nom_banque_bis = models.ForeignKey(Banque, null=True, blank=True, verbose_name=u"Nom de la banque")
+#     autre_payeur = models.CharField("Autre payeur", max_length=30, null=True, blank=True)
+#     somme = models.FloatField("Somme")
+#     date = models.DateField("date prévue", null=True, blank=True)
+#     date_virement = models.DateField("Date du virement effectué", null=True, blank=True)
+#     date_saisi = models.DateField(auto_now=True)
+#     bordereau = models.ForeignKey(Bordereau, verbose_name="Bordereau", null=True, blank=True)  # les bordereaux ne
+#     # concerne que les chèques
+#     is_ok = models.BooleanField(u"Impayé", default=False)
+#     num_paiement = models.IntegerField(u"Numéro de paiement", blank=True, null=True)
+#     observation = models.CharField(u"Observation", max_length=100, blank=True, null=True)
+#
+#     class Meta:
+#         db_table = u"pal_paiement_auditeur_backoffice"
+#         verbose_name = "Paiement"
+#         verbose_name_plural = "Paiements"
+#
+#     def __unicode__(self):
+#         return str(self.num_paiement)
+#
+#     def save(self, force_insert=False, force_update=False, using=None):
+#         if not self.num_paiement:
+#             self.num_paiement = self.etape.paiements.count() + 1
+#         if self.type == 'C':  # il s'aggit d'un chèque
+#             if not self.bordereau_id:  # il n'y a pas encore de bordereau attribuer
+#                 self.bordereau = Bordereau.auditeur.last_bordereau(self.num_paiement)
+#
+#         super(PaiementAuditeurBackoffice, self).save(force_insert, force_update, using)
+#
+#
+# class BordereauAuditeur(Bordereau):
+#     class Meta:
+#         proxy = True
+#         app_label = "backoffice"
+#         verbose_name = "bordereau auditeur"
+#         verbose_name_plural = "bordereaux auditeur"

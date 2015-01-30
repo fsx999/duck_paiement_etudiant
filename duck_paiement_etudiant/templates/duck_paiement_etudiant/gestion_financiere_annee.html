@@ -1,31 +1,24 @@
 {% extends "xadmin/base_site.html" %}
 {% load lib_inscription %}
-{% block nav_title %}Statistique Apogee{% endblock %}
+{% block nav_title %}Gestion financiere{% endblock %}
 {% block content %}
     <table class="table table-bordered table-striped">
         <thead>
         <tr>
-            <th></th>
-            <th colspan="7">Apogee</th>
-        </tr>
-        <tr>
-            <th></th>
-            <th>Incrit</th>
+            <th>Paiement</th>
+            <th>Impression des bordereaux</th>
+            <th>Cloture des bordereaux</th>
         </tr>
         </thead>
         <tbody>
-        {% for etape in etapes %}
-        {% with stat=etape.stat_apogee %}
+        {% for year in years %}
         <tr>
-            <td>{{ etape.label }}</td>
-            <td><a href=" {% url 'xadmin:extraction_apogee' etape.annee.cod_anu etape.cod_etp %}"> {{ stat.nb_inscrit }}</a></td>
+            <td><a class="btn btn-primary" href="{% url 'xadmin:' %}">Paiements : {{ year}}</a></td>
+            <td><a class="btn btn-primary" href="">Impression des bordereaux pour l'année  {{ year}}</a></td>
+            <td><a class="btn btn-primary" href="">Bordereaux : {{ year}}</a></td>
+
         <tr>
-        {% endwith %}
         {% endfor %}
-        <tr>
-            <td>Totaux</td>
-            <td>{% tag_totaux etapes 'stat_apogee' 'nb_inscrit' %}</td>
-        </tr>
 
         </tbody>
     </table>
