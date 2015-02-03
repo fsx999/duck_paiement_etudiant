@@ -1,6 +1,6 @@
 from django.views.decorators.cache import never_cache
 from django_apogee.models import InsAdmEtp
-from duck_paiement_etudiant.models import AnneeUniPaiement
+from duck_paiement_etudiant.models import AnneeUniPaiement, PaiementBackoffice
 
 __author__ = 'paulguichon'
 from xadmin import views
@@ -30,13 +30,31 @@ class GestionFinanciereAnnee(views.Dashboard):
 xadmin.site.register_view(r'^gestion_financiere/$', GestionFinanciereAnnee, 'gestion_financiere_annee')
 
 
+class PaiementInlineView(object):
+    model = PaiementBackoffice
+    exclude = ['cod_anu', 'cod_ind', 'cod_etp', 'cod_vrs_vet', 'num_occ_iae']
+    readonly_fields = ['bordereau']
+    extra = 1
+    max_num = 3
+
+
 class PaiementAdminView(object):
-    pass
-    # def get_urls(self, ):
+    fields = ['cod_ind']
+    readonly_fields = ['cod_ind']
+    inlines = [PaiementInlineView]
+
+
+
 
 class PaimentAdminAnneeList(views.ListAdminView):
-    pass
 
-xadmin.site.register_modelview(r'^annee/(?P<year>\w+)/$', PaimentAdminAnneeList, name='%s_%s_test')
+    def queryset(self):
+
+        queryset = super(PaimentAdminAnneeList, self).queryset()
+
+        return queryset.filter(cod_anu=self.kwargs['year'])
+
+
+xadmin.site.register_modelview(r'^annee/(?P<year>\w+)/$', PaimentAdminAnneeList, name='%s_%s_annee_list')
 
 xadmin.site.register(InsAdmEtp, PaiementAdminView)
