@@ -6,6 +6,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from .managers import BordereauManager, BordereauAuditeurManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 
+
 @python_2_unicode_compatible
 class AnneeUniPaiement(models.Model):
     cod_anu = models.IntegerField(primary_key=True)
@@ -15,6 +16,7 @@ class AnneeUniPaiement(models.Model):
         return '{}/{}'.format(self.cod_anu, self.cod_anu+1)
 
 
+@python_2_unicode_compatible
 class Banque(models.Model):
     nom = models.CharField("Nom de la banque", max_length=100, unique=True)
 
@@ -25,7 +27,7 @@ class Banque(models.Model):
         self.nom = self._capitalize(self.nom)
         return super(Banque, self).save(force_insert, force_update, using)
 
-    def __unicode__(self):
+    def __str__(self):
         return unicode(self.nom)
 
     class Meta:
