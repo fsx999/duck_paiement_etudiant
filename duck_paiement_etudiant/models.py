@@ -60,7 +60,13 @@ class Bordereau(models.Model):
         max_length=1)
 
     def is_plein(self):
-        if self.all_valid().count() >= 200:
+        volume = {
+            'C': 2,
+            'B': 1,
+            'E': 1,
+            'V': 2
+        }
+        if self.all_valid().count() >= volume[str(self.type_paiement)]:
             return True
         else:
             return False
@@ -227,8 +233,8 @@ class Bordereau(models.Model):
         pass
 
     def all_valid(self):
-        return self.paiementbackoffice_set.filter(type="C", etape__ETA_IAE='E') | self.paiementbackoffice_set.filter(
-            type="C", etape__force_encaissement=True)
+        return self.paiementbackoffice_set.filter(type=self.type_paiement, etape__eta_iae='E') | self.paiementbackoffice_set.filter(
+            type=self.type_paiement, etape__force_encaissement=True)
 
     def __unicode__(self):
         type_paiement = u"auditeur" if self.type_bordereau == "A" else "etudiant"
@@ -260,8 +266,7 @@ class PaiementBackoffice(models.Model):
                                                       ('V', u'Virement')),
                             max_length=1)
     num_cheque = models.CharField("Numéro de chéque", max_length=30, null=True, blank=True)
-    nom_banque = models.CharField("Nom de la banque", max_length=60, null=True, blank=True)
-    nom_banque_bis = models.ForeignKey(Banque, null=True, blank=True, verbose_name=u"Nom de la banque")
+    nom_banque = models.ForeignKey(Banque, null=True, blank=True, verbose_name=u"Nom de la banque")
     autre_payeur = models.CharField("Autre payeur", max_length=30, null=True, blank=True)
     somme = models.FloatField("Somme")
     date = models.DateField("date prévue", null=True, blank=True)
@@ -285,22 +290,25 @@ class PaiementBackoffice(models.Model):
     def __unicode__(self):
         return str(self.num_paiement)
 
-    # def save(self, force_insert=False, force_update=False, using=None):
-    #     if not self.num_paiement:
-    #         self.num_paiement = self.etape.paiements.count() + 1
-    #     if self.type == 'C':  # il s'aggit d'un chèque                    x
-    #         if not self.bordereau_id:  # il n'y a pas encore de bordereau attribuer
-    #             self.bordereau = Bordereau.objects.last_bordereau(self.num_paiement)
-    #
-    #     if self.__original_is_ok != self.is_ok:
-    #         pass
-    #     if not self.cod_anu:
-    #         self.cod_anu = self.etape.COD_ANU
-    #         self.cod_ind = self.etape.COD_IND
-    #         self.cod_etp = self.etape.COD_ETP
-    #         self.cod_vrs_vet = self.etape.COD_VRS_VET
-    #         self.num_occ_iae = self.etape.NUM_OCC_IAE
-    #     super(PaiementBackoffice, self).save(force_insert, force_update, using)
+    def save(self, force_insert=False, force_update=False, using=None, **kwargs):
+        if not self.cod_anu or not self.cod_ind or not self.cod_etp or not self.cod_vrs_vet:
+            anu = AnneeUniPaiement.objects.get(cod_anu=self.etape.cod_anu.cod_anu)
+            self.cod_anu = anu
+            self.cod_ind = self.etape.cod_ind
+            self.cod_etp = self.etape.cod_etp
+            self.cod_vrs_vet = self.etape.cod_vrs_vet
+            self.num_occ_iae = self.etape.num_occ_iae
+
+        if not self.num_paiement:
+            self.num_paiement = self.etape.paiements.count() + 1
+
+        if not self.bordereau_id:  # il n'y a pas encore de bordereau attribuer
+            self.bordereau = Bordereau.objects.last_bordereau(self.num_paiement, self.cod_anu.cod_anu, self.type)
+
+        if self.__original_is_ok != self.is_ok:
+            pass
+
+        super(PaiementBackoffice, self).save(force_insert, force_update, using)
 
     # def envoi_mail_relance(self):
     #

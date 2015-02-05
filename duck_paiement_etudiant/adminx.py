@@ -1,3 +1,5 @@
+# coding=utf-8
+from django.forms import Media
 from django.views.decorators.cache import never_cache
 from django_apogee.models import InsAdmEtp
 from duck_paiement_etudiant.models import AnneeUniPaiement, PaiementBackoffice
@@ -33,7 +35,7 @@ xadmin.site.register_view(r'^gestion_financiere/$', GestionFinanciereAnnee, 'ges
 class PaiementInlineView(object):
     model = PaiementBackoffice
     exclude = ['cod_anu', 'cod_ind', 'cod_etp', 'cod_vrs_vet', 'num_occ_iae']
-    readonly_fields = ['bordereau']
+    readonly_fields = ['bordereau', 'num_paiement']
     extra = 1
     max_num = 3
 
@@ -42,7 +44,16 @@ class PaiementAdminView(object):
     fields = ['cod_ind']
     readonly_fields = ['cod_ind']
     inlines = [PaiementInlineView]
+    search_fields = ['cod_ind__cod_etu']
+    hidden_menu = True
+    show_bookmarks = False
+    site_title = u'Dossiers financiers étudiants'
 
+    def get_media(self, *args, **kwargs):
+        media = super(PaiementAdminView, self).get_media(*args, **kwargs)
+        m = Media()
+        m.add_js(['paiement_etudiant/js/paiement_etudiant.js'])
+        return media+m
 
 
 
