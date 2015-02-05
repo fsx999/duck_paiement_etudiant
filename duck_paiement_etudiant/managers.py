@@ -10,7 +10,6 @@ class BordereauManager(models.Manager):
         return super(BordereauManager, self).get_query_set().filter(type_bordereau='N')
 
     def last_bordereau(self, num_paiement, annee, type_paiement):
-        print annee
         try:
 
             last_bordereau = self.filter(num_paiement=num_paiement, annee=annee, type_paiement=type_paiement).latest()
