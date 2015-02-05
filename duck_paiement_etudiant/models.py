@@ -61,10 +61,10 @@ class Bordereau(models.Model):
 
     def is_plein(self):
         volume = {
-            'C': 2,
+            'C': 200,
             'B': 1,
             'E': 1,
-            'V': 2
+            'V': 200
         }
         if self.all_valid().count() >= volume[str(self.type_paiement)]:
             return True
