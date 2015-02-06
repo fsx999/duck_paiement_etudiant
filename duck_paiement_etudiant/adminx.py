@@ -90,6 +90,7 @@ class PaiementAdminView(object):
     inlines = [PaiementInlineView]
     search_fields = ['cod_ind__cod_etu']
     hidden_menu = True
+
     show_bookmarks = False
     site_title = u'Dossiers financiers étudiants'
     form_layout = Layout(Container(Col('full',
