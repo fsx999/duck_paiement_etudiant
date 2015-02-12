@@ -2,10 +2,11 @@
 
 from django.db import models
 import unicodedata
+from django.db.models import Sum
 from django.utils.encoding import python_2_unicode_compatible
 from .managers import BordereauManager, BordereauAuditeurManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
-
+from datetime import date
 
 @python_2_unicode_compatible
 class AnneeUniPaiement(models.Model):
@@ -38,8 +39,9 @@ class Banque(models.Model):
 
 
 class Bordereau(models.Model):
-    """ Bordereau
-    Le bordreau qui contient les chèques français.
+    """
+    Bordereau
+    Le bordereau qui contient les chèques ou les virements.
     """
     num_bordereau = models.IntegerField("Numéro bordereau")
     num_paiement = models.IntegerField(u"Numéro de paiement", blank=True, null=True)
@@ -50,7 +52,7 @@ class Bordereau(models.Model):
     objects = BordereauManager()
     auditeur = BordereauAuditeurManager()
     type_paiement = models.CharField('type de paiement du bordereau',
-                                     choices=(('C', u'Chèque'),
+                                     choices=(('C', u'Chèque ordinaire'),
                                               ('B', u'Chèque de banque'),
                                               ('E', u"Chèque étranger"),
                                               ('V', u'Virement')),
@@ -72,6 +74,25 @@ class Bordereau(models.Model):
             return True
         else:
             return False
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        if self.cloture and not self.date_cloture:
+            self.date_cloture = date.today()
+        if not self.cloture and self.date_cloture:
+            self.date_cloture = None
+        super(Bordereau, self).save(force_insert, force_update, using, update_fields)
+
+    def total_sum(self):
+        """
+        Retourne la somme totale du bordereau courant.
+        """
+        return self.all_valid().aggregate(Sum('somme'))['somme__sum']
+
+    def nb_cheque_total(self):
+        """
+        Retourne le nombre total de chèque dans le présent bordereau.
+        """
+        return self.all_valid().count()
 
     def impression_bordereu(self, flux, annee):
     #     RED = 10

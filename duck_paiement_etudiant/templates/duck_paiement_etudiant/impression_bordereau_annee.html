@@ -1,0 +1,20 @@
+{% extends "xadmin/base_site.html" %}
+{% load lib_inscription %}
+{% block nav_title %}Impression bordereau{% endblock %}
+{% block content %}
+<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=C">Cheque ordinaire</a>
+<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=B">Cheque banque</a>
+<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=E">Cheque etranger</a>
+<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=V">Virement</a>
+{% regroup bordereaux by num_paiement as bordereaux_list %}
+<div class="row">
+{% for bordereau in bordereaux_list %}
+    <div class="col col-xs-4">
+    {{ bordereau.grouper }}
+    {% for b in bordereau.list %}
+          <a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau' bordereau=b.id %}">{{ b }}</a>
+    {% endfor %}
+    </div>
+{% endfor %}
+</div>
+{% endblock %}
