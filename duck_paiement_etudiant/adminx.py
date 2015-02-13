@@ -373,6 +373,11 @@ class MyFilter(NumberFieldListFilter):
 
 
 class BordereauAdmin(object):
+    fields = ('num_bordereau', 'num_paiement', 'cloture',
+                       'get_annee', 'get_type_paiement',
+                       'get_type_bordereau', 'date_cloture',
+                       'envoi_mail',
+                       'get_total_sum', 'get_nb_cheque_total')
     readonly_fields = ('num_bordereau', 'num_paiement',
                        'get_annee', 'get_type_paiement',
                        'get_type_bordereau', 'date_cloture',
