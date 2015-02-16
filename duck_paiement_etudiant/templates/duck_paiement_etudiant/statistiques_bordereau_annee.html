@@ -1,0 +1,79 @@
+{% extends "xadmin/base_site.html" %}
+{% block nav_title %}Statistiques bordereau{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col col-xs-4">
+        <ul>
+            <li>Nombre de chèques:</li>
+            <ul>
+                <li>Ordinaire: {{ nb_cheque_ordinaire }}</li>
+                <li>De Banque: {{ nb_cheque_banque }}</li>
+                <li>Étranger: {{ nb_cheque_etranger }}</li>
+                <li>Total: {{ nb_cheque_total }}</li>
+            </ul>
+        </ul>
+    </div>
+    <div class="col col-xs-4">
+        <ul>
+            <li>Nombre de virements: {{ nb_virement }}</li>
+        </ul>
+    </div>
+</div>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th></th>
+                <th colspan="3">Chèque ordinaire</th>
+                <th colspan="3">Chèque de banque</th>
+                <th colspan="3">Chèque étranger</th>
+                <th colspan="3">Virement</th>
+            </tr>
+            <tr>
+                <th></th>
+                <th>1er</th><th>2e</th><th>3e</th>
+                <th>1er</th><th>2e</th><th>3e</th>
+                <th>1er</th><th>2e</th><th>3e</th>
+                <th>1er</th><th>2e</th><th>3e</th>
+            </tr>
+        </thead>
+        <tbody>
+        <tr>
+            <th>Nombre de versements</th>
+            <td>{{ nb_1er_versement_ordinaire }}</td>
+            <td>{{ nb_2e_versement_ordinaire }}</td>
+            <td>{{ nb_3e_versement_ordinaire }}</td>
+            <td>{{ nb_1er_versement_banque }}</td>
+            <td>{{ nb_2e_versement_banque }}</td>
+            <td>{{ nb_3e_versement_banque }}</td>
+            <td>{{ nb_1er_versement_etranger }}</td>
+            <td>{{ nb_2e_versement_ordinaire }}</td>
+            <td>{{ nb_3e_versement_ordinaire }}</td>
+            <td>{{ nb_1er_versement_virement }}</td>
+            <td>{{ nb_2e_versement_virement }}</td>
+            <td>{{ nb_3e_versement_virement }}</td>
+        </tr>
+        <tr>
+            <th>Sommes</th>
+            <td>{{ somme_1er_versement_ordinaire }}</td>
+            <td>{{ somme_2e_versement_ordinaire }}</td>
+            <td>{{ somme_3e_versement_ordinaire }}</td>
+            <td>{{ somme_1er_versement_banque }}</td>
+            <td>{{ somme_2e_versement_banque }}</td>
+            <td>{{ somme_3e_versement_banque }}</td>
+            <td>{{ somme_1er_versement_etranger }}</td>
+            <td>{{ somme_2e_versement_ordinaire }}</td>
+            <td>{{ somme_3e_versement_ordinaire }}</td>
+            <td>{{ somme_1er_versement_virement }}</td>
+            <td>{{ somme_2e_versement_virement }}</td>
+            <td>{{ somme_3e_versement_virement }}</td>
+        </tr>
+        <tr>
+            <th>Somme totale</th>
+            <td colspan="3">{{ somme_totale_ordinaire }}</td>
+            <td colspan="3">{{ somme_totale_banque }}</td>
+            <td colspan="3">{{ somme_totale_etranger }}</td>
+            <td colspan="3">{{ somme_totale_virement }}</td>
+        </tr>
+        </tbody>
+    </table>
+{% endblock %}

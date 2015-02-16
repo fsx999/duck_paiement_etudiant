@@ -8,15 +8,17 @@
             <th>Paiement</th>
             <th>Impression des bordereaux</th>
             <th>Cloture des bordereaux</th>
+            <th>Statistiques</th>
         </tr>
         </thead>
         <tbody>
         {% for year in years %}
 
         <tr>
-            <td><a class="btn btn-primary" href="{% url 'xadmin:django_apogee_insadmetp_annee_list' year.cod_anu %}">Paiements : {{ year}}</a></td>
-            <td><a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau_annee' %}">Impression des bordereaux pour l'année {{ year}}</a></td>
-            <td><a class="btn btn-primary" href="{% url 'xadmin:duck_paiement_etudiant_bordereau_changelist' %}">Bordereaux : {{ year}}</a></td>
+            <td><a class="btn btn-primary" href="{% url 'xadmin:django_apogee_insadmetp_annee_list' year.cod_anu %}">Paiements : {{ year }}</a></td>
+            <td><a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau_annee' %}">Impression des bordereaux pour l'année {{ year }}</a></td>
+            <td><a class="btn btn-primary" href="{% url 'xadmin:duck_paiement_etudiant_bordereau_changelist' %}">Bordereaux : {{ year }}</a></td>
+            <td><a class="btn btn-primary" href="{% url 'xadmin:statistiques_bordereau_annee' %}">Statistiques : {{ year }}</a></td>
 
         <tr>
         {% endfor %}

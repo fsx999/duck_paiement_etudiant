@@ -1,6 +1,6 @@
 # coding=utf-8
 import datetime
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from django.http import HttpResponse
 from openpyxl import Workbook
 from openpyxl.cell import get_column_letter
@@ -44,6 +44,75 @@ class GestionFinanciereAnnee(views.Dashboard):
         self.widgets = self.get_widgets()
         return self.template_response(self.base_template, self.get_context())
 xadmin.site.register_view(r'^gestion_financiere/$', GestionFinanciereAnnee, 'gestion_financiere_annee')
+
+class StatistiquesBordereau(views.Dashboard):
+    base_template = 'duck_paiement_etudiant/statistiques_bordereau_annee.html'
+    widget_customiz = False
+
+    def get_context(self):
+        context = super(StatistiquesBordereau, self).get_context()
+        context['years'] = AnneeUniPaiement.objects.all().order_by('-cod_anu')
+        context['nb_cheque_ordinaire'] = PaiementBackoffice.objects.filter(type='C').count()
+        context['nb_cheque_etranger'] = PaiementBackoffice.objects.filter(type='E').count()
+        context['nb_cheque_banque'] = PaiementBackoffice.objects.filter(type='B').count()
+        context['nb_cheque_total'] = (context['nb_cheque_ordinaire'] +
+                                      context['nb_cheque_etranger'] +
+                                      context['nb_cheque_banque'])
+        context['nb_virement'] = PaiementBackoffice.objects.filter(type='V').count()
+
+        d = PaiementBackoffice.objects.filter(type='C', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
+        context['nb_1er_versement_ordinaire'] = d['somme__count']
+        context['somme_1er_versement_ordinaire'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='C', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
+        context['nb_2e_versement_ordinaire'] = d['somme__count']
+        context['somme_2e_versement_ordinaire'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='C', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
+        context['nb_3e_versement_ordinaire'] = d['somme__count']
+        context['somme_3e_versement_ordinaire'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='B', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
+        context['nb_1er_versement_banque'] = d['somme__count']
+        context['somme_1er_versement_banque'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='B', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
+        context['nb_2e_versement_banque'] = d['somme__count']
+        context['somme_2e_versement_banque'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='B', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
+        context['nb_3e_versement_banque'] = d['somme__count']
+        context['somme_3e_versement_banque'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='E', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
+        context['nb_1er_versement_etranger'] = d['somme__count']
+        context['somme_1er_versement_etranger'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='E', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
+        context['nb_2e_versement_etranger'] = d['somme__count']
+        context['somme_2e_versement_etranger'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='E', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
+        context['nb_3e_versement_etranger'] = d['somme__count']
+        context['somme_3e_versement_etranger'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='V', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
+        context['nb_1er_versement_virement'] = d['somme__count']
+        context['somme_1er_versement_virement'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='V', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
+        context['nb_2e_versement_virement'] = d['somme__count']
+        context['somme_2e_versement_virement'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        d = PaiementBackoffice.objects.filter(type='V', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
+        context['nb_3e_versement_virement'] = d['somme__count']
+        context['somme_3e_versement_virement'] = d['somme__sum'] if d['somme__sum'] else 0.0
+
+        somme = PaiementBackoffice.objects.filter(type='C').aggregate(Sum('somme'))['somme__sum']
+        context['somme_totale_ordinaire'] = somme if somme else 0.0
+        somme = PaiementBackoffice.objects.filter(type='B').aggregate(Sum('somme'))['somme__sum']
+        context['somme_totale_banque'] = somme if somme else 0.0
+        somme = PaiementBackoffice.objects.filter(type='E').aggregate(Sum('somme'))['somme__sum']
+        context['somme_totale_etranger'] = somme if somme else 0.0
+        somme = PaiementBackoffice.objects.filter(type='V').aggregate(Sum('somme'))['somme__sum']
+        context['somme_totale_virement'] = somme if somme else 0.0
+
+        return context
+
+    @never_cache
+    def get(self, request, *args, **kwargs):
+        self.widgets = self.get_widgets()
+        return self.template_response(self.base_template, self.get_context())
+xadmin.site.register_view(r'^statistiques_bordereau/$', StatistiquesBordereau, 'statistiques_bordereau_annee')
 
 class ImpressionBordereauAnnee(views.Dashboard):
     base_template = 'duck_paiement_etudiant/impression_bordereau_annee.html'
