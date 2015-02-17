@@ -6,16 +6,16 @@
         <ul>
             <li>Nombre de chèques:</li>
             <ul>
-                <li>Ordinaire: {{ nb_cheque_ordinaire }}</li>
-                <li>De Banque: {{ nb_cheque_banque }}</li>
-                <li>Étranger: {{ nb_cheque_etranger }}</li>
+                <li>Ordinaire: {{ data.ordinaire.nb }}</li>
+                <li>De Banque: {{ data.banque.nb }}</li>
+                <li>Étranger: {{ data.etranger.nb }}</li>
                 <li>Total: {{ nb_cheque_total }}</li>
             </ul>
         </ul>
     </div>
     <div class="col col-xs-4">
         <ul>
-            <li>Nombre de virements: {{ nb_virement }}</li>
+            <li>Nombre de virements: {{ data.virement.nb }}</li>
         </ul>
     </div>
 </div>
@@ -23,57 +23,68 @@
         <thead>
             <tr>
                 <th></th>
-                <th colspan="3">Chèque ordinaire</th>
-                <th colspan="3">Chèque de banque</th>
-                <th colspan="3">Chèque étranger</th>
-                <th colspan="3">Virement</th>
+                {% for label in headers_label %}
+                <th colspan="3">{{ label }}</th>
+                {% endfor %}
             </tr>
             <tr>
                 <th></th>
+                {% for label in headers_label %}
                 <th>1er</th><th>2e</th><th>3e</th>
-                <th>1er</th><th>2e</th><th>3e</th>
-                <th>1er</th><th>2e</th><th>3e</th>
-                <th>1er</th><th>2e</th><th>3e</th>
+                {% endfor %}
             </tr>
         </thead>
         <tbody>
         <tr>
             <th>Nombre de versements</th>
-            <td>{{ nb_1er_versement_ordinaire }}</td>
-            <td>{{ nb_2e_versement_ordinaire }}</td>
-            <td>{{ nb_3e_versement_ordinaire }}</td>
-            <td>{{ nb_1er_versement_banque }}</td>
-            <td>{{ nb_2e_versement_banque }}</td>
-            <td>{{ nb_3e_versement_banque }}</td>
-            <td>{{ nb_1er_versement_etranger }}</td>
-            <td>{{ nb_2e_versement_ordinaire }}</td>
-            <td>{{ nb_3e_versement_ordinaire }}</td>
-            <td>{{ nb_1er_versement_virement }}</td>
-            <td>{{ nb_2e_versement_virement }}</td>
-            <td>{{ nb_3e_versement_virement }}</td>
+            <td>{{ data.ordinaire.versement_1.count }}</td>
+            <td>{{ data.ordinaire.versement_2.count }}</td>
+            <td>{{ data.ordinaire.versement_3.count }}</td>
+            <td>{{ data.banque.versement_1.count }}</td>
+            <td>{{ data.banque.versement_2.count }}</td>
+            <td>{{ data.banque.versement_3.count }}</td>
+            <td>{{ data.etranger.versement_1.count }}</td>
+            <td>{{ data.etranger.versement_2.count }}</td>
+            <td>{{ data.etranger.versement_3.count }}</td>
+            <td>{{ data.virement.versement_1.count }}</td>
+            <td>{{ data.virement.versement_2.count }}</td>
+            <td>{{ data.virement.versement_3.count }}</td>
         </tr>
         <tr>
             <th>Sommes</th>
-            <td>{{ somme_1er_versement_ordinaire }}</td>
-            <td>{{ somme_2e_versement_ordinaire }}</td>
-            <td>{{ somme_3e_versement_ordinaire }}</td>
-            <td>{{ somme_1er_versement_banque }}</td>
-            <td>{{ somme_2e_versement_banque }}</td>
-            <td>{{ somme_3e_versement_banque }}</td>
-            <td>{{ somme_1er_versement_etranger }}</td>
-            <td>{{ somme_2e_versement_ordinaire }}</td>
-            <td>{{ somme_3e_versement_ordinaire }}</td>
-            <td>{{ somme_1er_versement_virement }}</td>
-            <td>{{ somme_2e_versement_virement }}</td>
-            <td>{{ somme_3e_versement_virement }}</td>
+            <td>{{ data.ordinaire.versement_1.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.ordinaire.versement_2.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.ordinaire.versement_3.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.banque.versement_1.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.banque.versement_2.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.banque.versement_3.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.etranger.versement_1.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.etranger.versement_2.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.etranger.versement_3.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.virement.versement_1.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.virement.versement_2.sum|default_if_none:0.0 }}</td>
+            <td>{{ data.virement.versement_3.sum|default_if_none:0.0 }}</td>
         </tr>
         <tr>
             <th>Somme totale</th>
-            <td colspan="3">{{ somme_totale_ordinaire }}</td>
-            <td colspan="3">{{ somme_totale_banque }}</td>
-            <td colspan="3">{{ somme_totale_etranger }}</td>
-            <td colspan="3">{{ somme_totale_virement }}</td>
+            <td colspan="3">{{ data.ordinaire.somme_totale|default_if_none:0.0 }}</td>
+            <td colspan="3">{{ data.banque.somme_totale|default_if_none:0.0 }}</td>
+            <td colspan="3">{{ data.etranger.somme_totale|default_if_none:0.0 }}</td>
+            <td colspan="3">{{ data.virement.somme_totale|default_if_none:0.0 }}</td>
         </tr>
         </tbody>
     </table>
+
+    <div class="row">
+    <div class="col col-xs-4">
+        <ul>
+            <li>Nombre d'étudiants ayant payé en:</li>
+            <ul>
+                <li>1 fois: {{ nb_etudiant_1_paiement }}</li>
+                <li>2 fois: {{ nb_etudiant_2_paiement }}</li>
+                <li>3 fois: {{ nb_etudiant_3_paiement }}</li>
+            </ul>
+        </ul>
+    </div>
+    </div>
 {% endblock %}

@@ -52,60 +52,34 @@ class StatistiquesBordereau(views.Dashboard):
     def get_context(self):
         context = super(StatistiquesBordereau, self).get_context()
         context['years'] = AnneeUniPaiement.objects.all().order_by('-cod_anu')
-        context['nb_cheque_ordinaire'] = PaiementBackoffice.objects.filter(type='C').count()
-        context['nb_cheque_etranger'] = PaiementBackoffice.objects.filter(type='E').count()
-        context['nb_cheque_banque'] = PaiementBackoffice.objects.filter(type='B').count()
-        context['nb_cheque_total'] = (context['nb_cheque_ordinaire'] +
-                                      context['nb_cheque_etranger'] +
-                                      context['nb_cheque_banque'])
-        context['nb_virement'] = PaiementBackoffice.objects.filter(type='V').count()
+        context['data'] = {'ordinaire': {}, 'banque': {}, 'etranger': {}, 'virement': {}}
+        context['headers_label'] = ['Chèque ordinaire', 'Chèque de banque', 'Chèque étranger', 'Virement']
 
-        d = PaiementBackoffice.objects.filter(type='C', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
-        context['nb_1er_versement_ordinaire'] = d['somme__count']
-        context['somme_1er_versement_ordinaire'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='C', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
-        context['nb_2e_versement_ordinaire'] = d['somme__count']
-        context['somme_2e_versement_ordinaire'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='C', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
-        context['nb_3e_versement_ordinaire'] = d['somme__count']
-        context['somme_3e_versement_ordinaire'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='B', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
-        context['nb_1er_versement_banque'] = d['somme__count']
-        context['somme_1er_versement_banque'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='B', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
-        context['nb_2e_versement_banque'] = d['somme__count']
-        context['somme_2e_versement_banque'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='B', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
-        context['nb_3e_versement_banque'] = d['somme__count']
-        context['somme_3e_versement_banque'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='E', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
-        context['nb_1er_versement_etranger'] = d['somme__count']
-        context['somme_1er_versement_etranger'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='E', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
-        context['nb_2e_versement_etranger'] = d['somme__count']
-        context['somme_2e_versement_etranger'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='E', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
-        context['nb_3e_versement_etranger'] = d['somme__count']
-        context['somme_3e_versement_etranger'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='V', num_paiement=1).aggregate(Count('somme'), Sum('somme'))
-        context['nb_1er_versement_virement'] = d['somme__count']
-        context['somme_1er_versement_virement'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='V', num_paiement=2).aggregate(Count('somme'), Sum('somme'))
-        context['nb_2e_versement_virement'] = d['somme__count']
-        context['somme_2e_versement_virement'] = d['somme__sum'] if d['somme__sum'] else 0.0
-        d = PaiementBackoffice.objects.filter(type='V', num_paiement=3).aggregate(Count('somme'), Sum('somme'))
-        context['nb_3e_versement_virement'] = d['somme__count']
-        context['somme_3e_versement_virement'] = d['somme__sum'] if d['somme__sum'] else 0.0
+        context['data']['ordinaire']['nb'] = PaiementBackoffice.objects.filter(type='C').count()
+        context['data']['etranger']['nb'] = PaiementBackoffice.objects.filter(type='E').count()
+        context['data']['banque']['nb'] = PaiementBackoffice.objects.filter(type='B').count()
+        context['nb_cheque_total'] = (context['data']['ordinaire']['nb'] +
+                                      context['data']['etranger']['nb'] +
+                                      context['data']['banque']['nb'])
+        context['data']['virement']['nb'] = PaiementBackoffice.objects.filter(type='V').count()
 
-        somme = PaiementBackoffice.objects.filter(type='C').aggregate(Sum('somme'))['somme__sum']
-        context['somme_totale_ordinaire'] = somme if somme else 0.0
-        somme = PaiementBackoffice.objects.filter(type='B').aggregate(Sum('somme'))['somme__sum']
-        context['somme_totale_banque'] = somme if somme else 0.0
-        somme = PaiementBackoffice.objects.filter(type='E').aggregate(Sum('somme'))['somme__sum']
-        context['somme_totale_etranger'] = somme if somme else 0.0
-        somme = PaiementBackoffice.objects.filter(type='V').aggregate(Sum('somme'))['somme__sum']
-        context['somme_totale_virement'] = somme if somme else 0.0
+        for k, v in {'ordinaire': 'C',
+                     'banque': 'B',
+                     'etranger': 'E',
+                     'virement': 'V' }.iteritems():
+            context['data'][k]['somme_totale'] = PaiementBackoffice.objects.filter(type=v).aggregate(Sum('somme'))['somme__sum']
+            for n in range(1, 4):
+                context['data'][k]['versement_{}'.format(n)] = PaiementBackoffice.objects.filter(type=v, num_paiement=n)\
+                                                                                 .aggregate(count=Count('somme'),
+                                                                                            sum=Sum('somme'))
+        # Calcul combien d'étudiant à payé en 1 fois, 2 fois ou 3 fois
+        result = {1:0, 2:0, 3:0}
+        for x in PaiementBackoffice.objects.all().values('cod_ind').annotate(Count('cod_ind')):
+            result[x['cod_ind__count']] += 1
 
+        context['nb_etudiant_1_paiement'] = result[1]
+        context['nb_etudiant_2_paiement'] = result[2]
+        context['nb_etudiant_3_paiement'] = result[3]
         return context
 
     @never_cache
