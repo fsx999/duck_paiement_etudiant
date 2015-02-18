@@ -9,6 +9,9 @@ class BordereauManager(models.Manager):
     def get_query_set(self):
         return super(BordereauManager, self).get_query_set().filter(type_bordereau='N')
 
+    def by_year(self, year):
+        return self.filter(annee__cod_anu=year)
+
     def last_bordereau(self, num_paiement, annee, type_paiement):
         try:
 
@@ -43,3 +46,8 @@ class BordereauAuditeurManager(BordereauManager):
     #             return last_bordereau
     #     except models.ObjectDoesNotExist:  # Si c'est le premier on crée
     #         return self.create(num_paiement=num_paiement, num_bordereau=1, type_bordereau='A')
+
+
+class PaiementBackofficeManager(models.Manager):
+    def by_year(self, year):
+        return self.filter(cod_anu=year)

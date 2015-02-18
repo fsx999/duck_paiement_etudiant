@@ -2,17 +2,16 @@
 {% load lib_inscription %}
 {% block nav_title %}Impression bordereau{% endblock %}
 {% block content %}
-<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=C">Cheque ordinaire</a>
-<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=B">Cheque banque</a>
-<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=E">Cheque etranger</a>
-<a class="btn btn-default" href="{% url 'xadmin:impression_bordereau_annee' %}?type=V">Virement</a>
+    {% for k, v in data.iteritems %}
+        <a class="btn {% if v.is_active %}btn-success{% else %}btn-default{% endif %}" href="{% url 'xadmin:impression_bordereau_annee' %}?type={{ k }}">{{ v.title }}</a>
+    {% endfor %}
 {% regroup bordereaux by num_paiement as bordereaux_list %}
 <div class="row">
 {% for bordereau in bordereaux_list %}
     <div class="col col-xs-4">
-    {{ bordereau.grouper }}
+    <h3>{{ bordereau.grouper }}</h3>
     {% for b in bordereau.list %}
-          <a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau' bordereau=b.id %}">{{ b }}</a>
+          <a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau' bordereau=b.id %}">{{ b }}</a><br />
     {% endfor %}
     </div>
 {% endfor %}

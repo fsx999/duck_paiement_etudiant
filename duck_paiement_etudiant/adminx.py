@@ -31,13 +31,11 @@ class GestionFinanciereAnnee(views.Dashboard):
         context = super(GestionFinanciereAnnee, self).get_context()
         context['years'] = AnneeUniPaiement.objects.all().order_by('-cod_anu')
         return context
-    #
-    # @filter_hook
-    # def get_breadcrumb(self):
-    #     return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
-    #             {'url': self.get_admin_url('statistiques'), 'title': 'Statistique'},
-    #             {'url': self.get_admin_url('stats_pal'), 'title': 'Statistique PAL'}]
-    #
+
+    @filter_hook
+    def get_breadcrumb(self):
+        return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
+                {'title': 'Gestion financière'}]
 
     @never_cache
     def get(self, request, *args, **kwargs):
@@ -50,31 +48,36 @@ class StatistiquesBordereau(views.Dashboard):
     widget_customiz = False
 
     def get_context(self):
+        from collections import OrderedDict
         context = super(StatistiquesBordereau, self).get_context()
-        context['years'] = AnneeUniPaiement.objects.all().order_by('-cod_anu')
+        year = self.kwargs.get('year', 2014)
         context['data'] = {'ordinaire': {}, 'banque': {}, 'etranger': {}, 'virement': {}}
-        context['headers_label'] = ['Chèque ordinaire', 'Chèque de banque', 'Chèque étranger', 'Virement']
+        context['data'] = OrderedDict()
+        context['data']['ordinaire'] = {'header': 'Chèque ordinaire'}
+        context['data']['banque'] = {'header': 'Chèque de banque'}
+        context['data']['etranger'] = {'header': 'Chèque étranger'}
+        context['data']['virement'] = {'header': 'Virement'}
 
-        context['data']['ordinaire']['nb'] = PaiementBackoffice.objects.filter(type='C').count()
-        context['data']['etranger']['nb'] = PaiementBackoffice.objects.filter(type='E').count()
-        context['data']['banque']['nb'] = PaiementBackoffice.objects.filter(type='B').count()
+        context['data']['ordinaire']['nb'] = PaiementBackoffice.objects.by_year(year).filter(type='C').count()
+        context['data']['etranger']['nb'] = PaiementBackoffice.objects.by_year(year).filter(type='E').count()
+        context['data']['banque']['nb'] = PaiementBackoffice.objects.by_year(year).filter(type='B').count()
         context['nb_cheque_total'] = (context['data']['ordinaire']['nb'] +
                                       context['data']['etranger']['nb'] +
                                       context['data']['banque']['nb'])
-        context['data']['virement']['nb'] = PaiementBackoffice.objects.filter(type='V').count()
+        context['data']['virement']['nb'] = PaiementBackoffice.objects.by_year(year).filter(type='V').count()
 
         for k, v in {'ordinaire': 'C',
                      'banque': 'B',
                      'etranger': 'E',
                      'virement': 'V' }.iteritems():
-            context['data'][k]['somme_totale'] = PaiementBackoffice.objects.filter(type=v).aggregate(Sum('somme'))['somme__sum']
+            context['data'][k]['somme_totale'] = PaiementBackoffice.objects.by_year(year).filter(type=v).aggregate(Sum('somme'))['somme__sum']
             for n in range(1, 4):
-                context['data'][k]['versement_{}'.format(n)] = PaiementBackoffice.objects.filter(type=v, num_paiement=n)\
+                context['data'][k]['versement_{}'.format(n)] = PaiementBackoffice.objects.by_year(year).filter(type=v, num_paiement=n)\
                                                                                  .aggregate(count=Count('somme'),
                                                                                             sum=Sum('somme'))
         # Calcul combien d'étudiant à payé en 1 fois, 2 fois ou 3 fois
         result = {1:0, 2:0, 3:0}
-        for x in PaiementBackoffice.objects.all().values('cod_ind').annotate(Count('cod_ind')):
+        for x in PaiementBackoffice.objects.by_year(year).all().values('cod_ind').annotate(Count('cod_ind')):
             result[x['cod_ind__count']] += 1
 
         context['nb_etudiant_1_paiement'] = result[1]
@@ -82,21 +85,42 @@ class StatistiquesBordereau(views.Dashboard):
         context['nb_etudiant_3_paiement'] = result[3]
         return context
 
+    @filter_hook
+    def get_breadcrumb(self):
+        return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
+                {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
+                {'url': self.get_admin_url('statistiques_bordereau_annee', year=self.kwargs['year']), 'title': 'Statistiques'}]
+
     @never_cache
     def get(self, request, *args, **kwargs):
         self.widgets = self.get_widgets()
         return self.template_response(self.base_template, self.get_context())
-xadmin.site.register_view(r'^statistiques_bordereau/$', StatistiquesBordereau, 'statistiques_bordereau_annee')
+xadmin.site.register_view(r'^statistiques_bordereau/(?P<year>\d+)$', StatistiquesBordereau, 'statistiques_bordereau_annee')
 
 class ImpressionBordereauAnnee(views.Dashboard):
     base_template = 'duck_paiement_etudiant/impression_bordereau_annee.html'
     widget_customiz = False
 
     def get_context(self):
+        from collections import OrderedDict
         context = super(ImpressionBordereauAnnee, self).get_context()
         type_bordereau = self.request.GET.get('type', 'C')
-        context['bordereaux'] = Bordereau.objects.filter(type_paiement=type_bordereau, annee__cod_anu=2014)
+        data = OrderedDict()
+        data['C'] = {'title': 'Chèque ordinaire', 'is_active': False}
+        data['B'] = {'title': 'Chèque de banque', 'is_active': False}
+        data['E'] = {'title': 'Chèque étranger', 'is_active': False}
+        data['V'] = {'title': 'Virement', 'is_active': False}
+        data[type_bordereau]['is_active'] = True
+        context['data'] = data
+        context['bordereaux'] = Bordereau.objects.by_year(2014).filter(type_paiement=type_bordereau)
         return context
+
+    @filter_hook
+    def get_breadcrumb(self):
+        return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
+                {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
+                {'title': 'Impression bordereau'}]
+
 
     @never_cache
     def get(self, request, *args, **kwargs):
@@ -286,7 +310,7 @@ class ImpressionBordereau(BaseAdminView):
                                                                                             date,)
         return response
 
-xadmin.site.register_view(r'^download_bordereau_spreadsheet/(?P<bordereau>\d)$', ImpressionBordereau, 'impression_bordereau')
+xadmin.site.register_view(r'^download_bordereau_spreadsheet/(?P<bordereau>\d+)$', ImpressionBordereau, 'impression_bordereau')
 
 class PaiementInlineView(object):
     model = PaiementBackoffice
@@ -357,6 +381,11 @@ class PaiementAdminView(object):
                     'force_encaissement'
                     , css_class="unsort no_title"), horizontal=True, span=12)
             ))
+    @filter_hook
+    def get_breadcrumb(self):
+        breadcrumb = super(PaiementAdminView, self).get_breadcrumb()
+        breadcrumb = [breadcrumb[0]] + [{'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'}] + breadcrumb[1:]
+        return breadcrumb
 
     def get_media(self, *args, **kwargs):
         media = super(PaiementAdminView, self).get_media(*args, **kwargs)
@@ -398,9 +427,7 @@ class PaiementAdminView(object):
 class PaimentAdminAnneeList(views.ListAdminView):
 
     def queryset(self):
-
         queryset = super(PaimentAdminAnneeList, self).queryset()
-
         return queryset.filter(cod_anu=self.kwargs['year'])
 
 xadmin.site.register_modelview(r'^annee/(?P<year>\w+)/$', PaimentAdminAnneeList, name='%s_%s_annee_list')
@@ -442,6 +469,12 @@ class BordereauAdmin(object):
                     'cloture'
                     , css_class="unsort no_title"), horizontal=True, span=12)
             ))
+
+    @filter_hook
+    def get_breadcrumb(self):
+        return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
+                {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
+                {'title': 'Bordereaux'}]
 
     def get_annee(self, obj):
         return '{}'.format(obj.annee)

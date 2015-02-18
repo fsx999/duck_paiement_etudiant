@@ -23,13 +23,13 @@
         <thead>
             <tr>
                 <th></th>
-                {% for label in headers_label %}
-                <th colspan="3">{{ label }}</th>
+                {% for k, v in data.iteritems %}
+                <th colspan="3">{{ v.header }}</th>
                 {% endfor %}
             </tr>
             <tr>
                 <th></th>
-                {% for label in headers_label %}
+                {% for k in data %}
                 <th>1er</th><th>2e</th><th>3e</th>
                 {% endfor %}
             </tr>
@@ -37,40 +37,25 @@
         <tbody>
         <tr>
             <th>Nombre de versements</th>
-            <td>{{ data.ordinaire.versement_1.count }}</td>
-            <td>{{ data.ordinaire.versement_2.count }}</td>
-            <td>{{ data.ordinaire.versement_3.count }}</td>
-            <td>{{ data.banque.versement_1.count }}</td>
-            <td>{{ data.banque.versement_2.count }}</td>
-            <td>{{ data.banque.versement_3.count }}</td>
-            <td>{{ data.etranger.versement_1.count }}</td>
-            <td>{{ data.etranger.versement_2.count }}</td>
-            <td>{{ data.etranger.versement_3.count }}</td>
-            <td>{{ data.virement.versement_1.count }}</td>
-            <td>{{ data.virement.versement_2.count }}</td>
-            <td>{{ data.virement.versement_3.count }}</td>
+            {% for k, v in data.iteritems %}
+            <td>{{ v.versement_1.count }}</td>
+            <td>{{ v.versement_2.count }}</td>
+            <td>{{ v.versement_3.count }}</td>
+            {% endfor %}
         </tr>
         <tr>
             <th>Sommes</th>
-            <td>{{ data.ordinaire.versement_1.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.ordinaire.versement_2.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.ordinaire.versement_3.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.banque.versement_1.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.banque.versement_2.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.banque.versement_3.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.etranger.versement_1.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.etranger.versement_2.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.etranger.versement_3.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.virement.versement_1.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.virement.versement_2.sum|default_if_none:0.0 }}</td>
-            <td>{{ data.virement.versement_3.sum|default_if_none:0.0 }}</td>
+            {% for k, v in data.iteritems %}
+            <td>{{ v.versement_1.sum|default_if_none:0.0 }}</td>
+            <td>{{ v.versement_2.sum|default_if_none:0.0 }}</td>
+            <td>{{ v.versement_3.sum|default_if_none:0.0 }}</td>
+            {% endfor %}
         </tr>
         <tr>
             <th>Somme totale</th>
-            <td colspan="3">{{ data.ordinaire.somme_totale|default_if_none:0.0 }}</td>
-            <td colspan="3">{{ data.banque.somme_totale|default_if_none:0.0 }}</td>
-            <td colspan="3">{{ data.etranger.somme_totale|default_if_none:0.0 }}</td>
-            <td colspan="3">{{ data.virement.somme_totale|default_if_none:0.0 }}</td>
+            {% for k, v in data.iteritems %}
+            <td colspan="3">{{ v.somme_totale|default_if_none:0.0 }}</td>
+            {% endfor %}
         </tr>
         </tbody>
     </table>

@@ -4,7 +4,7 @@ from django.db import models
 import unicodedata
 from django.db.models import Sum
 from django.utils.encoding import python_2_unicode_compatible
-from .managers import BordereauManager, BordereauAuditeurManager
+from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 from datetime import date
 
@@ -300,6 +300,7 @@ class PaiementBackoffice(models.Model):
     is_ok = models.BooleanField(u"Impayé", default=False)
     num_paiement = models.IntegerField(u"Numéro de paiement", blank=True, null=True)
     observation = models.CharField(u"Observation", max_length=100, blank=True, null=True)
+    objects = PaiementBackofficeManager()
 
     class Meta:
         db_table = u"pal_paiement_backoffice"
