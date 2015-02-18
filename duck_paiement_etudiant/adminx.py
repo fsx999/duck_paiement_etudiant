@@ -112,7 +112,8 @@ class ImpressionBordereauAnnee(views.Dashboard):
         data['V'] = {'title': 'Virement', 'is_active': False}
         data[type_bordereau]['is_active'] = True
         context['data'] = data
-        context['bordereaux'] = Bordereau.objects.by_year(2014).filter(type_paiement=type_bordereau)
+        context['year'] = self.kwargs.get('year', 2014)
+        context['bordereaux'] = Bordereau.objects.by_year(context['year']).filter(type_paiement=type_bordereau)
         return context
 
     @filter_hook
@@ -126,7 +127,7 @@ class ImpressionBordereauAnnee(views.Dashboard):
     def get(self, request, *args, **kwargs):
         self.widgets = self.get_widgets()
         return self.template_response(self.base_template, self.get_context())
-xadmin.site.register_view(r'^impression_bordereau/$', ImpressionBordereauAnnee, 'impression_bordereau_annee')
+xadmin.site.register_view(r'^impression_bordereau/(?P<year>\d+)$', ImpressionBordereauAnnee, 'impression_bordereau_annee')
 
 
 class ImpressionBordereau(BaseAdminView):

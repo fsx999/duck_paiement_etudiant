@@ -3,7 +3,7 @@
 {% block nav_title %}Impression bordereau{% endblock %}
 {% block content %}
     {% for k, v in data.iteritems %}
-        <a class="btn {% if v.is_active %}btn-success{% else %}btn-default{% endif %}" href="{% url 'xadmin:impression_bordereau_annee' %}?type={{ k }}">{{ v.title }}</a>
+        <a class="btn {% if v.is_active %}btn-success{% else %}btn-default{% endif %}" href="{% url 'xadmin:impression_bordereau_annee' year %}?type={{ k }}">{{ v.title }}</a>
     {% endfor %}
 {% regroup bordereaux by num_paiement as bordereaux_list %}
 <div class="row">
