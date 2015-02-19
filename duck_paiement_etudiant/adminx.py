@@ -384,6 +384,10 @@ class PaiementAdminView(object):
             ))
     url_kwargs = ['(?P<year>\d+)']
 
+    def queryset(self):
+        queryset = super(PaiementAdminView, self).queryset()
+        return queryset.filter(cod_anu=self.kwargs['year'])
+
     @filter_hook
     def get_breadcrumb(self):
         breadcrumb = super(PaiementAdminView, self).get_breadcrumb()
@@ -426,14 +430,6 @@ class PaiementAdminView(object):
     get_eta_iae.short_description = 'Etat de l\'inscription administrative'
     get_eta_iae.allow_tags = True
 
-#
-# class PaimentAdminAnneeList(views.ListAdminView):
-#
-#     def queryset(self):
-#         queryset = super(PaimentAdminAnneeList, self).queryset()
-#         return queryset.filter(cod_anu=self.kwargs['year'])
-#
-# xadmin.site.register_modelview(r'^annee/(?P<year>\w+)/$', PaimentAdminAnneeList, name='%s_%s_annee_list')
 
 
 class BanqueAdmin(object):
@@ -474,11 +470,16 @@ class BordereauAdmin(object):
             ))
     url_kwargs = ['(?P<year>\d+)']
 
-    # @filter_hook
-    # def get_breadcrumb(self):
-    #     return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
-    #             {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
-    #             {'title': 'Bordereaux'}]
+    @filter_hook
+    def get_breadcrumb(self):
+        return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
+                {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
+                {'title': 'Bordereaux'}]
+
+    def queryset(self):
+        queryset = super(BordereauAdmin, self).queryset()
+        year = self.kwargs.get('year', 2014)
+        return queryset.filter(annee__cod_anu=year)
 
     def get_annee(self, obj):
         return '{}'.format(obj.annee)
@@ -501,6 +502,8 @@ class BordereauAdmin(object):
         return '{}'.format(obj.nb_cheque_total())
     get_nb_cheque_total.short_description = 'Nombre de chèque(s)'
     get_nb_cheque_total.allow_tags = True
+
+
 
 
 
