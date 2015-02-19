@@ -4,6 +4,7 @@ from django.db import models
 import unicodedata
 from django.db.models import Sum
 from django.utils.encoding import python_2_unicode_compatible
+from mailrobot.models import MailBody
 from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 from datetime import date
@@ -94,117 +95,7 @@ class Bordereau(models.Model):
         """
         return self.all_valid().count()
 
-    def impression_bordereu(self, flux, annee):
-    #     RED = 10
-    #     GRIS = 22
-    #
-    #     COL_NUM_CHEQUE = 1
-    #     COL_NOM_BANQUE = 2
-    #     COL_NOM_ETUDIANT = 3
-    #     COL_PRENOM_ETUDIANT = 4
-    #     COL_CODE_ETUDIANT = 5
-    #     COL_SOMME = 6
-    #     COL_AUTRE_PAYEUR = 7
-    #     COL_DATE_CLOTURE = 7
-    #     all_border = 'borders: left thick, right thick, top thick, bottom thick;'
-    #     gris = 'pattern: pattern solid, pattern_fore_colour 22;'
-    #     center = 'alignment: horizontal center;'
-    #     gauche = "alignment: horizontal left;"
-    #     bold = "font: bold True;"
-    #     size = "font: height 250;"
-    #     book = xlwt.Workbook(encoding='utf-8')
-    #     row = 0
-    #     feuille = book.add_sheet('Bordereau')
-    #     feuille.portrait = False
-    #     feuille.top_margin = 0.5
-    #     feuille.bottom_margin = 0.5
-    #     feuille.write_merge(row, row, 0, 4, u"I.E.D. Frais  d'Enseignement à Distance  %s/%s" % (
-    #         annee,
-    #         int(annee) + 1),
-    #         xlwt.Style.easyxf(bold))
-    #     row += 2
-    #     feuille.write_merge(row, row, 0, 4, "MODE DE PAIEMENT : CHÈQUES NORMAUX",
-    #                         xlwt.Style.easyxf(bold))
-    #
-    #     row += 1
-    #     feuille.write_merge(row, row, 0, 4, "Paiement numéro %s / Bordereau Numéro : %s" % (
-    #         self.num_paiement,
-    #         self.num_bordereau))
-    #     feuille.col(0).width = 1250
-    #     feuille.col(COL_NUM_CHEQUE).width = 2900
-    #     feuille.col(COL_NOM_BANQUE).width = 6250
-    #     feuille.col(COL_NOM_ETUDIANT).width = 6250
-    #     feuille.col(COL_PRENOM_ETUDIANT).width = 5000
-    #     feuille.col(COL_CODE_ETUDIANT).width = 2875
-    #     feuille.col(COL_SOMME).width = 3000
-    #     feuille.col(COL_AUTRE_PAYEUR).width = 8000
-    #
-    #     row += 2
-    #     entete = gris + center + all_border + 'alignment: vertical center;' + bold
-    #     feuille.write(row, COL_NUM_CHEQUE, u"N° CHEQUE", xlwt.Style.easyxf(entete))
-    #     feuille.write(row, COL_NOM_BANQUE, u"BANQUE", xlwt.Style.easyxf(entete))
-    #     feuille.write(row, COL_NOM_ETUDIANT, u"NOM ETUDIANT", xlwt.Style.easyxf(entete))
-    #     feuille.write(row, COL_PRENOM_ETUDIANT, u"PRENOM ETUDIANT", xlwt.Style.easyxf(entete))
-    #     feuille.write(row, COL_CODE_ETUDIANT, u"CODE ETUDIANT", xlwt.Style.easyxf(entete))
-    #     feuille.write(row, COL_SOMME, u"€", xlwt.Style.easyxf(entete))
-    #     feuille.write(row, COL_AUTRE_PAYEUR, u"PAYEUR – TITULAIRE DU COMPTE", xlwt.Style.easyxf(entete))
-    #     if self.type_bordereau == 'N':
-    #         paiements = self.all_valid().order_by('nom_banque_bis__nom', 'somme', 'pk')
-    #     else:
-    #         paiements = self.paiementauditeurbackoffice_set.all().order_by('nom_banque_bis__nom', 'somme', 'pk')
-    #
-    #     nb_paiement = len(paiements)
-    #
-    #     for i, p in enumerate(paiements):
-    #         value = 'borders: left thick, right thick; pattern: pattern solid, pattern_fore_colour %s;' % (
-    #             GRIS if i % 2 else 100)
-    #
-    #         if i == 0:
-    #             value += 'borders: left thick, right thick, top thick;'
-    #         if i + 1 == nb_paiement:
-    #             value += 'borders: left thick, right thick, bottom thick;'
-    #         row += 1
-    #         if self.type_bordereau == 'N':
-    #             etudiant = p.etape.COD_IND
-    #         else:
-    #             etudiant = p.etape
-    #             etudiant.LIB_NOM_PAT_IND = etudiant.last_name
-    #             etudiant.LIB_PR1_IND = etudiant.first_name
-    #             etudiant.COD_ETU = etudiant.code_ied
-    #
-    #         try:
-    #             nom_banque = p.nom_banque_bis.nom
-    #         except AttributeError:
-    #             nom_banque = u"Annomalie"
-    #             value = 'borders: left thick, right thick;pattern: pattern solid, pattern_fore_colour %s;' % RED
-    #         feuille.write(row, 0, i + 1, xlwt.Style.easyxf(value + center))
-    #         feuille.write(row, COL_NUM_CHEQUE, p.num_cheque, xlwt.Style.easyxf(value + center))
-    #         feuille.write(row, COL_NOM_BANQUE, nom_banque, xlwt.Style.easyxf(value))
-    #         feuille.write(row, COL_NOM_ETUDIANT, etudiant.LIB_NOM_PAT_IND, xlwt.Style.easyxf(value))
-    #         feuille.write(row, COL_PRENOM_ETUDIANT, etudiant.LIB_PR1_IND, xlwt.Style.easyxf(value))
-    #         feuille.write(row, COL_CODE_ETUDIANT, etudiant.COD_ETU, xlwt.Style.easyxf(value + gauche))
-    #         feuille.write(row, COL_SOMME, p.somme, xlwt.Style.easyxf(value))
-    #         feuille.write(row, COL_AUTRE_PAYEUR, p.autre_payeur, xlwt.Style.easyxf(value))
-    #     row += 2
-    #     total = all_border + bold + size
-    #     feuille.row(row).height = 500
-    #     feuille.write(row, COL_SOMME - 1, u'Total :',
-    #                   xlwt.Style.easyxf(total))
-    #     if self.type_bordereau == 'N':
-    #         feuille.write(row, COL_SOMME, self.all_valid().aggregate(Sum('somme'))['somme__sum'],
-    #                   xlwt.Style.easyxf(total))
-    #     else:
-    #         feuille.write(row, COL_SOMME,  self.paiementauditeurbackoffice_set.all().aggregate(Sum('somme'))['somme__sum'],
-    #                   xlwt.Style.easyxf(total))
-    #     date1 = self.date_cloture.strftime('%d/%m/%Y') if self.date_cloture else "Non cloturé"
-    #     row += 2
-    #     feuille.row(row).height = 500
-    #     feuille.write_merge(row, row, COL_DATE_CLOTURE - 2,  COL_DATE_CLOTURE - 1, u'Date de remise :',
-    #                         xlwt.Style.easyxf(total))
-    #     feuille.write(row, COL_DATE_CLOTURE, date1,
-    #                   xlwt.Style.easyxf(total))
-    #
-    #     book.save(flux)
+
     #
     # def get_annee(self):
     #     return u"%s / %s" % (self.annee.cod_anu, int(self.annee.cod_anu) + 1)
@@ -253,7 +144,7 @@ class Bordereau(models.Model):
     #                   [etu.email_ied(), etu.get_email()])
     #     self.envoi_mail = True
     #     self.save()
-        pass
+
 
     def all_valid(self):
         return self.paiementbackoffice_set.filter(type=self.type_paiement, etape__eta_iae='E') | self.paiementbackoffice_set.filter(
