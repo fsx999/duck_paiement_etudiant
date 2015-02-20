@@ -3,15 +3,13 @@ import datetime
 from django.db.models import Sum, Count
 from django.http import HttpResponse
 from openpyxl import Workbook
-from openpyxl.cell import get_column_letter
 from openpyxl.styles import Style, Font, Border, Side, PatternFill, Alignment
 import openpyxl.styles.borders
 import openpyxl.styles.fills
 import openpyxl.styles.colors
 from openpyxl.writer.excel import save_virtual_workbook
-from xadmin.layout import FormHelper, Layout, Fieldset, TabHolder, Container, Column, Col, Field
+from xadmin.layout import Layout, Fieldset, Container, Col
 from django.forms import Media
-from django.forms.models import inlineformset_factory
 from django.views.decorators.cache import never_cache
 from django_apogee.models import InsAdmEtp
 from duck_paiement_etudiant.models import AnneeUniPaiement, PaiementBackoffice, Banque, Bordereau
@@ -96,6 +94,7 @@ class StatistiquesBordereau(views.Dashboard):
         self.widgets = self.get_widgets()
         return self.template_response(self.base_template, self.get_context())
 xadmin.site.register_view(r'^statistiques_bordereau/(?P<year>\d+)$', StatistiquesBordereau, 'statistiques_bordereau_annee')
+
 
 class ImpressionBordereauAnnee(views.Dashboard):
     base_template = 'duck_paiement_etudiant/impression_bordereau_annee.html'
@@ -225,7 +224,10 @@ class ImpressionBordereau(BaseAdminView):
             else:
                 ## Date prevue
                 cell = ws.cell(row=row, column=2)
-                cell.value = paiement.date.strftime('%d/%m/%Y')
+                try:
+                    cell.value = paiement.date.strftime('%d/%m/%Y')
+                except AttributeError:
+                    cell.value = ''
                 cell.style = Style(font=arial_font,
                                    border=thin_border,
                                    fill=light_grey_fill if start%2 else dark_grey_fill,
@@ -312,6 +314,7 @@ class ImpressionBordereau(BaseAdminView):
         return response
 
 xadmin.site.register_view(r'^download_bordereau_spreadsheet/(?P<bordereau>\d+)$', ImpressionBordereau, 'impression_bordereau')
+
 
 class PaiementInlineView(object):
     model = PaiementBackoffice
