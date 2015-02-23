@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+from django.conf import settings
 
 from django.db import models
 import unicodedata
 from django.db.models import Sum
 from django.utils.encoding import python_2_unicode_compatible
-from mailrobot.models import MailBody
+from mailrobot.models import MailBody, Mail
 from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 from datetime import date
@@ -79,9 +80,49 @@ class Bordereau(models.Model):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.cloture and not self.date_cloture:
             self.date_cloture = date.today()
+            if not self.envoi_mail:
+                self.send_mail_cloture_bordereau()
+                if not settings.DEBUG: # if in Production, send the mail
+                    self.envoi_mail = True
+
         if not self.cloture and self.date_cloture:
             self.date_cloture = None
         super(Bordereau, self).save(force_insert, force_update, using, update_fields)
+
+    def send_mail_cloture_bordereau(self):
+        """
+        Send confirmation mail to every paiementbackoffice's user.
+        """
+        context = {
+            'date_cloture': self.date_cloture.strftime("%d-%m-%Y"),
+        }
+        template = Mail.objects.get(name='cloture_bordereau')
+        idx = 0
+        for p in self.paiementbackoffice_set.all():
+            context.update({'nom_banque': p.nom_banque.nom,
+                            'nom': p.etape.nom(),
+                            'prenom': p.etape.prenom(),
+                            'num_cheque': p.num_cheque,
+                            'num_etu': p.etape.cod_ind.cod_etu,
+                            'montant': p.somme,
+                            'code_diplome': p.etape.cod_dip,
+                           })
+            recipients = (p.cod_ind.get_email(p.cod_anu.cod_anu))
+            if settings.DEBUG:
+                recipients = ('alexandre.parent@iedparis8.net',)
+
+            mail = template.make_message(recipients=recipients,
+                                         context=context)
+            if idx % 100: # we make a pause every 100 mails
+                time.sleep(1)
+
+            mail.send()
+            if settings.DEBUG:
+                # send only one mail in debug
+                break
+
+            idx += 1
+
 
     def total_sum(self):
         """
@@ -123,13 +164,13 @@ class Bordereau(models.Model):
     # paiement. \n
     # Nous vous prions d'agréer, Madame, Monsieur, nos cordiales salutations. \n
     #
-    # PÔLE FINANCIER
-    # Institut d’Enseignement à Distance – IED
-    # UNIVERSITÉ PARIS 8
-    # 2, rue de la Liberté
-    # 93 526 SAINT-DENIS Cedex 02
-    # \n
-    # ne pas répondre à ce mail
+# PÔLE FINANCIER
+# Institut d’Enseignement à Distance – IED
+# UNIVERSITÉ PARIS 8
+# 2, rue de la Liberté
+# 93 526 SAINT-DENIS Cedex 02
+# \n
+# ne pas répondre à ce mail
     #         """ % {
     #             'nom': etu.LIB_NOM_PAT_IND,
     #             'prenom': etu.LIB_PR1_IND,
