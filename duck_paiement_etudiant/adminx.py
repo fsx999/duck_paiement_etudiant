@@ -41,6 +41,7 @@ class GestionFinanciereAnnee(views.Dashboard):
         return self.template_response(self.base_template, self.get_context())
 xadmin.site.register_view(r'^gestion_financiere/$', GestionFinanciereAnnee, 'gestion_financiere_annee')
 
+
 class StatistiquesBordereau(views.Dashboard):
     base_template = 'duck_paiement_etudiant/statistiques_bordereau_annee.html'
     widget_customiz = False
@@ -474,7 +475,7 @@ class BordereauAdmin(object):
                     'cloture'
                     , css_class="unsort no_title"), horizontal=True, span=12)
             ))
-    pattern = r'^%s/%s/(?P<year>\d+)'
+    pattern = r'^%s/%s/(?P<year>\d+)/'
 
     def get_kwargs_url(self, instance=None):
         return {'year': 2014}
