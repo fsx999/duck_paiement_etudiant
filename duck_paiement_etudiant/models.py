@@ -9,6 +9,7 @@ from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.utils.encoding import python_2_unicode_compatible
 from mailrobot.models import MailBody, Mail
+from duck_utils.utils import email_ied
 from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 from datetime import date
@@ -113,7 +114,7 @@ class Bordereau(models.Model):
                             'montant': p.somme,
                             'code_diplome': p.etape.cod_dip,
                            })
-            recipients = (p.cod_ind.get_email(p.cod_anu.cod_anu))
+            recipients = (p.cod_ind.get_email(p.cod_anu.cod_anu), email_ied(p.cod_ind))
             if settings.DEBUG:
                 recipients = ('alexandre.parent@iedparis8.net',)
 
@@ -267,7 +268,7 @@ class PaiementBackoffice(models.Model):
         if settings.DEBUG:
             recipients = ("alexandre.parent@iedparis8.net",)
         else:
-            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu), str(self.cod_ind)+'@foad.iedparis8.net')
+            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu), email_ied(self.cod_ind))
 
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='impaye.pdf', content=pdf_file)
