@@ -9,7 +9,7 @@ from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.utils.encoding import python_2_unicode_compatible
 from mailrobot.models import MailBody, Mail
-from duck_utils.utils import email_ied
+from duck_utils.utils import email_ied, get_recipients
 from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 from datetime import date
@@ -114,14 +114,12 @@ class Bordereau(models.Model):
                             'montant': p.somme,
                             'code_diplome': p.etape.cod_dip,
                            })
-            recipients = (p.cod_ind.get_email(p.cod_anu.cod_anu), email_ied(p.cod_ind))
-            if settings.DEBUG:
-                recipients = ('alexandre.parent@iedparis8.net',)
+            recipients = get_recipients(p.cod_ind, self.annee)
 
             mail = template.make_message(recipients=recipients,
                                          context=context)
-            # if not idx % 100: # we make a pause every 100 mails
-            #     time.sleep(1)
+            if not idx % 100: # we make a pause every 100 mails
+                time.sleep(1)
 
             mail.send()
             if settings.DEBUG:
@@ -265,10 +263,7 @@ class PaiementBackoffice(models.Model):
         pdf_file = wkhtmltopdf([f.name])
         f.close()
         template_mail = Mail.objects.get(name='mail_relance')
-        if settings.DEBUG:
-            recipients = ("alexandre.parent@iedparis8.net",)
-        else:
-            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu), email_ied(self.cod_ind))
+        recipients = get_recipients(self.cod_ind, self.cod_anu)
 
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='impaye.pdf', content=pdf_file)
@@ -298,10 +293,7 @@ class PaiementBackoffice(models.Model):
         pdf_file = wkhtmltopdf([f.name])
         f.close()
         template_mail = Mail.objects.get(name='mail_regularisation')
-        if settings.DEBUG:
-            recipients = ("alexandre.parent@iedparis8.net",)
-        else:
-            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu),)
+        recipients = get_recipients(self.cod_ind, self.cod_anu)
 
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='regularisation.pdf', content=pdf_file)
