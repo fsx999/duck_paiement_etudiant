@@ -119,8 +119,8 @@ class Bordereau(models.Model):
 
             mail = template.make_message(recipients=recipients,
                                          context=context)
-            if not idx % 100: # we make a pause every 100 mails
-                time.sleep(1)
+            # if not idx % 100: # we make a pause every 100 mails
+            #     time.sleep(1)
 
             mail.send()
             if settings.DEBUG:
@@ -267,7 +267,7 @@ class PaiementBackoffice(models.Model):
         if settings.DEBUG:
             recipients = ("alexandre.parent@iedparis8.net",)
         else:
-            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu),)
+            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu), str(self.cod_ind)+'@foad.iedparis8.net')
 
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='impaye.pdf', content=pdf_file)
