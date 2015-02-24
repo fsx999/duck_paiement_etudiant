@@ -199,7 +199,7 @@ class ImpressionBordereau(BaseAdminView):
 
         row = 7
         start = 1
-        for paiement in bordereau.paiementbackoffice_set.all().distinct():
+        for paiement in bordereau.paiementbackoffice_set.all().distinct().order_by('id'):
             cell = ws.cell(row=row, column=1)
             cell.value = start
             cell.style = Style(font=arial_bold_font,
@@ -385,7 +385,10 @@ class PaiementAdminView(object):
                     'force_encaissement'
                     , css_class="unsort no_title"), horizontal=True, span=12)
             ))
-    url_kwargs = ['(?P<year>\d+)']
+    pattern = r'^%s/%s/(?P<year>\d+)/'
+
+    def get_kwargs_url(self, instance=None):
+        return {'year': 2014}
 
     def queryset(self):
         queryset = super(PaiementAdminView, self).queryset()
@@ -471,7 +474,10 @@ class BordereauAdmin(object):
                     'cloture'
                     , css_class="unsort no_title"), horizontal=True, span=12)
             ))
-    url_kwargs = ['(?P<year>\d+)']
+    pattern = r'^%s/%s/(?P<year>\d+)'
+
+    def get_kwargs_url(self, instance=None):
+        return {'year': 2014}
 
     @filter_hook
     def get_breadcrumb(self):
