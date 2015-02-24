@@ -1,0 +1,107 @@
+<html>
+<head>
+    <title></title>
+    <style type="text/css">
+        body {
+            text-align: justify;
+            font-size: 12px;
+        }
+        .entette{
+            margin-left: 10cm;
+            border-width: 1px;
+            border-color: #000000;
+            border-style: dashed;
+            padding: 10px;
+            text-align: center;
+
+        }
+        .light{
+            font-size: 6pt;
+            padding: 0;
+            margin: 0;
+
+        }
+        #logo_ied{
+            zoom:70%;
+        }
+        .cadre{
+            border-top-style: dashed;
+            border-top-width: 1px;
+            border-top-color: #000000;
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+            border-bottom-color: #000000;
+            border-left-style: dashed;
+            border-left-width: 1px;
+            border-left-color: #000000;
+            border-right-style: dashed;
+            border-right-width: 1px;
+            border-right-color: #000000;
+            padding: 3px;
+            margin-bottom: 5px;
+        }
+        .font{
+            font-size: 15px;
+        }
+
+        .red{
+            color: red;
+        }
+        td {
+            padding-top: 10px;
+            padding-bottom: 0px;
+            margin-bottom: 0px;
+        }
+        td.nom{
+
+            margin-left: 10px;
+            padding-left: 40px;
+        }
+    </style>
+</head>
+
+<body>
+<table>
+    <tr>
+        <td><img id="logo_ied" src="{{ static }}/logo-ied.jpg"/></td>
+        <td class="cadre nom">
+            {{ individu.nom }}
+{{ individu.prenom }}<br>
+{{ individu.adresse|safe }}</td>
+    </tr>
+</table>
+<br>
+<div align="right">
+    Saint-Denis <br>
+    le {% now "d/m/Y" %}
+</div>
+
+<div><b>
+    <u>Objet</u> : Paiements des frais d'inscription.<br>
+    <u>Numéro d'étudiant</u> : {{ individu.cod_etu }} {{ cod_etp }}</b>
+</div>
+
+<div>
+<center>Mademoiselle, Madame, Monsieur,</center><br><br>
+<div>
+Nous vous informons que nous avons bien reçu les éléments/pièces manquantes de votre dossier – en outre les paiements dûs - de ce fait votre compte étudiant a été débloqué suite à la régularisation de celui ci.<br><br>
+</div>
+Nous restons à votre dispositions, pour toutes autres informations complémentaires. <br><br>
+
+Je vous prie de recevoir, Mademoiselle, Madame, Monsieur, mes salutations distinguées.<br><br>
+</div>
+<div>
+<center>IED - Université Paris 8 Vincennes St Denis <br>
+Madame OULD-HOCINE Farida <br>
+Madame BAYARTAN Evin<br>
+Bât D-Bureau D239 <br>
+2 rue de la Liberté<br>
+93 526 SAINT-DENIS Cedex</center><br>
+</div>
+<div>
+    Je vous prie de recevoir,  Madame, Monsieur, mes salutations distinguées. <br>
+</div>
+<div align="right"><b>Laurent THIBAUDEAU<br>Responsable administratif</b></div>
+
+</body>
+</html>

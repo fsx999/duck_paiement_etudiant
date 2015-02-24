@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
+import tempfile
 from django.conf import settings
 
 from django.db import models
 import unicodedata
 from django.db.models import Sum
+from django.template import Template, Context
+from django.template.loader import render_to_string
 from django.utils.encoding import python_2_unicode_compatible
 from mailrobot.models import MailBody, Mail
 from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 from datetime import date
 import time
+from wkhtmltopdf.utils import wkhtmltopdf
+from duck_utils.models import TemplateHtmlModel
 
 @python_2_unicode_compatible
 class AnneeUniPaiement(models.Model):
@@ -179,7 +184,7 @@ class PaiementBackoffice(models.Model):
     cod_vrs_vet = models.CharField(u"(COPIED)Numero Version Etape", max_length=3, db_column="COD_VRS_VET", null=True)
     num_occ_iae = models.CharField(u"", max_length=2, null=True, db_column="NUM_OCC_IAE")
     # fin
-    type = models.CharField("type paiement", choices=(('C', u'Chéque'),
+    type = models.CharField("type paiement", choices=(('C', u'Chèque'),
                                                       ('B', u'Chèque de banque'),
                                                       ('E', u"Chèque étranger"),
                                                       ('V', u'Virement')),
@@ -193,7 +198,7 @@ class PaiementBackoffice(models.Model):
     date_saisi = models.DateField(auto_now=True)
     bordereau = models.ForeignKey(Bordereau, verbose_name="Bordereau", null=True, blank=True)  # les bordereaux ne
     # concerne que les chèques
-    is_ok = models.BooleanField(u"Impayé", default=False)
+    is_not_ok = models.BooleanField(u"Impayé", default=False)
     num_paiement = models.IntegerField(u"Numéro de paiement", blank=True, null=True)
     observation = models.CharField(u"Observation", max_length=100, blank=True, null=True)
     objects = PaiementBackofficeManager()
@@ -205,7 +210,7 @@ class PaiementBackoffice(models.Model):
 
     def __init__(self, *args, **kwargs):
         super(PaiementBackoffice, self).__init__(*args, **kwargs)
-        self.__original_is_ok = self.is_ok
+        self.__original_is_ok = self.is_not_ok
 
     def __unicode__(self):
         return str(self.num_paiement)
@@ -225,10 +230,81 @@ class PaiementBackoffice(models.Model):
         if not self.bordereau_id:  # il n'y a pas encore de bordereau attribuer
             self.bordereau = Bordereau.objects.last_bordereau(self.num_paiement, self.cod_anu.cod_anu, self.type)
 
-        if self.__original_is_ok != self.is_ok:
-            pass
+        if self.__original_is_ok != self.is_not_ok:
+            if self.is_not_ok:
+                self.send_mail_relance()
+            else:
+                self.send_mail_regularisation()
+
+            self.__original_is_ok = self.is_not_ok
 
         super(PaiementBackoffice, self).save(force_insert, force_update, using)
+
+    def send_mail_relance(self):
+        """
+        """
+        model = TemplateHtmlModel.objects.get(name='mail_relance')
+        # Creation du contexte
+        context = {
+            "individu": {
+                "nom": self.etape.nom(),
+                "prenom": self.etape.prenom(),
+                "adresse": self.etape.adresse(),
+                "cod_etu": self.etape.cod_ind.cod_etu
+            },
+            "cod_etp": self.etape.cod_etp,
+            "paiement": self,
+        }
+        template = Template(model.content)
+        f = tempfile.NamedTemporaryFile(mode='w+b', bufsize=-1,
+                                        suffix='.html', prefix='tmp', dir=None,
+                                        delete=True)
+        f.write(template.render(Context(context)))
+        f.flush()
+        pdf_file = wkhtmltopdf([f.name])
+        f.close()
+        template_mail = Mail.objects.get(name='mail_relance')
+        if settings.DEBUG:
+            recipients = ("alexandre.parent@iedparis8.net",)
+        else:
+            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu),)
+
+        mail = template_mail.make_message(recipients=recipients)
+        mail.attach(filename='impaye.pdf', content=pdf_file)
+        mail.send()
+
+
+    def send_mail_regularisation(self):
+        """
+        """
+        model = TemplateHtmlModel.objects.get(name='mail_regularisation')
+        # Creation du contexte
+        context = {
+            "individu": {
+                "nom": self.etape.nom(),
+                "prenom": self.etape.prenom(),
+                "adresse": self.etape.adresse(),
+                "cod_etu": self.etape.cod_ind.cod_etu
+            },
+            "cod_etp": self.etape.cod_etp,
+        }
+        template = Template(model.content)
+        f = tempfile.NamedTemporaryFile(mode='w+b', bufsize=-1,
+                                        suffix='.html', prefix='tmp', dir=None,
+                                        delete=True)
+        f.write(template.render(Context(context)))
+        f.flush()
+        pdf_file = wkhtmltopdf([f.name])
+        f.close()
+        template_mail = Mail.objects.get(name='mail_regularisation')
+        if settings.DEBUG:
+            recipients = ("alexandre.parent@iedparis8.net",)
+        else:
+            recipients = (self.cod_ind.get_email(self.cod_anu.cod_anu),)
+
+        mail = template_mail.make_message(recipients=recipients)
+        mail.attach(filename='regularisation.pdf', content=pdf_file)
+        mail.send()
 
     # def envoi_mail_relance(self):
     #
@@ -394,7 +470,7 @@ class PaiementBackoffice(models.Model):
 #     date_saisi = models.DateField(auto_now=True)
 #     bordereau = models.ForeignKey(Bordereau, verbose_name="Bordereau", null=True, blank=True)  # les bordereaux ne
 #     # concerne que les chèques
-#     is_ok = models.BooleanField(u"Impayé", default=False)
+#     is_not_ok = models.BooleanField(u"Impayé", default=False)
 #     num_paiement = models.IntegerField(u"Numéro de paiement", blank=True, null=True)
 #     observation = models.CharField(u"Observation", max_length=100, blank=True, null=True)
 #

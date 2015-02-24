@@ -1,0 +1,154 @@
+<html>
+<head>
+    <title></title>
+    <style type="text/css">
+        body {
+            text-align: justify;
+            font-size: 12px;
+        }
+        .entette{
+            margin-left: 10cm;
+            border-width: 1px;
+            border-color: #000000;
+            border-style: dashed;
+            padding: 10px;
+            text-align: center;
+
+        }
+        .light{
+            font-size: 6pt;
+            padding: 0;
+            margin: 0;
+
+        }
+        #logo_ied{
+            zoom:70%;
+        }
+        .cadre{
+            border-top-style: dashed;
+            border-top-width: 1px;
+            border-top-color: #000000;
+            border-bottom-style: dashed;
+            border-bottom-width: 1px;
+            border-bottom-color: #000000;
+            border-left-style: dashed;
+            border-left-width: 1px;
+            border-left-color: #000000;
+            border-right-style: dashed;
+            border-right-width: 1px;
+            border-right-color: #000000;
+            padding: 3px;
+            margin-bottom: 5px;
+        }
+        .font{
+            font-size: 15px;
+        }
+
+        .red{
+            color: red;
+        }
+        td {
+            padding-top: 10px;
+            padding-bottom: 0px;
+            margin-bottom: 0px;
+        }
+        td.nom{
+
+            margin-left: 10px;
+            padding-left: 40px;
+        }
+        .etiquette{
+            margin-left: 2cm;
+            margin-right: 7cm;
+            padding-left: 2cm;
+            padding-right: 2cm;
+            padding-top: 2cm;
+            padding-bottom: 2cm;
+        }
+    </style>
+</head>
+
+<body>
+<table>
+    <tr>
+        <td><img id="logo_ied" src="{{ static }}/logo-ied.jpg"/></td>
+        <td class="cadre nom">
+            {{ individu.nom }}
+{{ individu.prenom }}<br>
+{{ individu.adresse|safe }}</td>
+    </tr>
+</table>
+<br>
+<div align="right">
+    Saint-Denis <br>
+    le {% now "d/m/Y" %}
+</div>
+
+<div><b>
+    <u>Objet</u> : Paiements des frais d'inscription.<br>
+    <u>Numéro d'étudiant</u> : {{ individu.cod_etu }} {{ cod_etp }}</b>
+</div>
+
+<div>
+    <center><b>IMPORTANT ET URGENT</b></center>
+</div>
+<div>
+    <b><u>Objet</u> : Paiement du solde des frais  propres à l’enseignement à distance IED année universitaire 2013/2014.</b>
+</div>
+
+<div><center>Mademoiselle, Madame, Monsieur,<br></center></div>
+<div>
+    Lors de votre inscription à l’Institut d’Enseignement à Distance au titre de l’année  2013/2014, vous avez opté pour le paiement par virement(s) bancaire(s) des frais propres à l’enseignement à distance .
+</div>
+
+<div>
+    Or, <b>sauf erreur de notre part, <span class="red"> le virement numéro {{ paiement.num_paiement }} d'un montant
+    {{ paiement.somme|floatformat:"-2" }} €,
+    programmé(s) par vous, n’apparait ou n'apparaissent</span> pas sur les relevés de compte de l’Université Paris 8
+    .</b>
+    <br>
+    <br>
+    <b>Nous vous serions donc reconnaissants de : </b>
+    <br>
+    1°) <b>au cas où vous avez déjà payé,</b> de bien vouloir prendre contact avec votre banque afin de vérifier que la ou les autorisations de virement que vous avez établies ont bien donné lieu au paiement de la somme de {{ paiement.somme|floatformat:"-2" }} €,
+    au profit de l’Université Paris 8.
+Merci dans ce cas, de nous faire parvenir le <u>justificatif</u> de ce paiement. <br> <br>
+
+    2°)<b>au cas où le virement n’aurait pas été réalisé,</b>merci d'établir un chèque d'un montant de {{ paiement.somme|floatformat:"-2" }} €
+(encaissement de tous les paiements manquants dès réception).
+    Ce chèque étant à établir exclusivement <u>à l’ordre de « l’Agent comptable Université Paris 8 »</u>. <br><br>
+    <i>Il est impératif d'indiquer votre nunéro d'étudiant au dos du chèque, le code diplôme ainsi que la mention
+        « IED » suivis de votre nom et prénoms.</i> <br><br>
+    <b>
+        Votre paiement doit nous être parvenu entre le 2 et 7 septembre 2014 avant la mise en œuvre par l’Agent comptable de l’Université Paris 8 des procédures de recouvrement réglementaires.
+        <br><br>
+
+Ceci permettra également de lever le blocage administratif et pédagogique de votre dossier. <br><br>
+
+    </b>
+</div>
+
+<div>
+    <u>Quelle que soit votre situation (1°ou 2°) vous adresserez votre courrier (y joindre copie de ce mail) à
+        l’adresse suivante :</u><br>
+</div>
+<div>
+<center>IED - Université Paris 8 Vincennes St Denis <br>
+Madame OULD-HOCINE Farida <br>
+Madame BAYARTAN Evin<br>
+Bât D-Bureau D239 <br>
+2 rue de la Liberté<br>
+93 526 SAINT-DENIS Cedex</center><br>
+</div>
+<div>
+    Je vous prie de recevoir,  Madame, Monsieur, mes salutations distinguées. <br>
+</div>
+<div align="right"><b>Laurent THIBAUDEAU<br>Responsable administratif</b></div>
+{#<pdf:nextpage/>#}
+{#<div class="cadre etiquette">#}
+{#{{ individu.LIB_NOM_PAT_IND }}#}
+{#{{ individu.LIB_PR1_IND }}<br>#}
+{#{{ individu.get_adresse_html|safe }}#}
+{#</div>#}
+</body>
+</html>
