@@ -9,6 +9,7 @@ from mailrobot.models import MailBody, Mail
 from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
 from django_apogee.models import InsAdmEtp, AnneeUni, Individu
 from datetime import date
+import time
 
 @python_2_unicode_compatible
 class AnneeUniPaiement(models.Model):
@@ -80,7 +81,7 @@ class Bordereau(models.Model):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if self.cloture and not self.date_cloture:
             self.date_cloture = date.today()
-            if not self.envoi_mail:
+            if not self.envoi_mail and not self.type_paiement == "V":
                 self.send_mail_cloture_bordereau()
                 if not settings.DEBUG: # if in Production, send the mail
                     self.envoi_mail = True
@@ -113,7 +114,7 @@ class Bordereau(models.Model):
 
             mail = template.make_message(recipients=recipients,
                                          context=context)
-            if idx % 100: # we make a pause every 100 mails
+            if not idx % 100: # we make a pause every 100 mails
                 time.sleep(1)
 
             mail.send()
@@ -149,43 +150,6 @@ class Bordereau(models.Model):
     #         self.do_envoi_mail()
     #     return super(Bordereau, self).save(force_insert, force_update, using)
     #
-    # def do_envoi_mail(self):
-    #     for paiement in self.paiementbackoffice_set.all():
-    #         etu = paiement.etape.COD_IND
-    #         etape = paiement.etape
-    #         text = u"""
-    # %(nom)s %(prenom)s %(num_etu)s %(code_diplome)s
-    #
-    # Madame, Monsieur,
-    # Nous vous adresserons ce e-mail informant que votre chèque numéro %(num_cheque)s de la banque %(nom_banque)s
-    # d'un montant de %(montant)i euro vient d'être traiter par  nos service en date du %(date_cloture)s .
-    # Il sera donc bientôt débiter de votre compte bancaire. \n
-    # Nous vous prions de faire le nécessaire afin d'approvisionner votre compte, pour éviter tout désagrément de
-    # paiement. \n
-    # Nous vous prions d'agréer, Madame, Monsieur, nos cordiales salutations. \n
-    #
-# PÔLE FINANCIER
-# Institut d’Enseignement à Distance – IED
-# UNIVERSITÉ PARIS 8
-# 2, rue de la Liberté
-# 93 526 SAINT-DENIS Cedex 02
-# \n
-# ne pas répondre à ce mail
-    #         """ % {
-    #             'nom': etu.LIB_NOM_PAT_IND,
-    #             'prenom': etu.LIB_PR1_IND,
-    #             'num_etu': etu.COD_ETU,
-    #             'code_diplome': etape.COD_ETP,
-    #             'num_cheque': paiement.num_cheque,
-    #             'nom_banque': paiement.nom_banque,
-    #             'montant': paiement.somme,
-    #             'date_cloture': self.date_cloture.strftime("%d-%m-%Y")
-    #         }
-    #         send_mail(u"Chéque mis en encaissement", text, "nepasrepondre@iedparis8.net",
-    #                   [etu.email_ied(), etu.get_email()])
-    #     self.envoi_mail = True
-    #     self.save()
-
 
     def all_valid(self):
         return self.paiementbackoffice_set.filter(type=self.type_paiement, etape__eta_iae='E') | self.paiementbackoffice_set.filter(
