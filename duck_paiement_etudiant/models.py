@@ -242,7 +242,6 @@ class PaiementBackoffice(models.Model):
     def send_mail_relance(self):
         """
         """
-        model = TemplateHtmlModel.objects.get(name='mail_relance')
         # Creation du contexte
         context = {
             "individu": {
@@ -254,11 +253,11 @@ class PaiementBackoffice(models.Model):
             "cod_etp": self.etape.cod_etp,
             "paiement": self,
         }
-        template = Template(model.content)
+        template = render_to_string('mail_relance', context)
         f = tempfile.NamedTemporaryFile(mode='w+b', bufsize=-1,
                                         suffix='.html', prefix='tmp', dir=None,
                                         delete=True)
-        f.write(template.render(Context(context)))
+        f.write(template)
         f.flush()
         pdf_file = wkhtmltopdf([f.name])
         f.close()
@@ -273,7 +272,6 @@ class PaiementBackoffice(models.Model):
     def send_mail_regularisation(self):
         """
         """
-        model = TemplateHtmlModel.objects.get(name='mail_regularisation')
         # Creation du contexte
         context = {
             "individu": {
@@ -284,11 +282,11 @@ class PaiementBackoffice(models.Model):
             },
             "cod_etp": self.etape.cod_etp,
         }
-        template = Template(model.content)
+        template = render_to_string('mail_regularisation', context)
         f = tempfile.NamedTemporaryFile(mode='w+b', bufsize=-1,
                                         suffix='.html', prefix='tmp', dir=None,
                                         delete=True)
-        f.write(template.render(Context(context)))
+        f.write(template)
         f.flush()
         pdf_file = wkhtmltopdf([f.name])
         f.close()
