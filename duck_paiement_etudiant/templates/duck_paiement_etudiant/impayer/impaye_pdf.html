@@ -1,77 +1,16 @@
+{% load static %}
 <html>
 <head>
-    <title></title>
+    <link href="{% static "bootstrap3/css/bootstrap.min.css" %}" rel="stylesheet">
     <style type="text/css">
-        body {
-            text-align: justify;
-            font-size: 12px;
-        }
-        .entette{
-            margin-left: 10cm;
-            border-width: 1px;
-            border-color: #000000;
-            border-style: dashed;
-            padding: 10px;
-            text-align: center;
-
-        }
-        .light{
-            font-size: 6pt;
-            padding: 0;
-            margin: 0;
-
-        }
-        #logo_ied{
-            zoom:70%;
-        }
-        .cadre{
-            border-top-style: dashed;
-            border-top-width: 1px;
-            border-top-color: #000000;
-            border-bottom-style: dashed;
-            border-bottom-width: 1px;
-            border-bottom-color: #000000;
-            border-left-style: dashed;
-            border-left-width: 1px;
-            border-left-color: #000000;
-            border-right-style: dashed;
-            border-right-width: 1px;
-            border-right-color: #000000;
-            padding: 3px;
-            margin-bottom: 5px;
-        }
-        .font{
-            font-size: 15px;
-        }
-
-        .red{
-            color: red;
-        }
-        td {
-            padding-top: 10px;
-            padding-bottom: 0px;
-            margin-bottom: 0px;
-        }
-        td.nom{
-
-            margin-left: 10px;
-            padding-left: 40px;
-        }
-        .etiquette{
-            margin-left: 2cm;
-            margin-right: 7cm;
-            padding-left: 2cm;
-            padding-right: 2cm;
-            padding-top: 2cm;
-            padding-bottom: 2cm;
-        }
+       div.break { page-break-after: always }
     </style>
 </head>
-
 <body>
+
 <table>
     <tr>
-        <td><img id="logo_ied" src="{{ static }}/logo-ied.jpg"/></td>
+        <td><img id="logo_ied" src="{% static "images/logo-ied.jpg"%} "/></td>
         <td class="cadre nom">
             {{ individu.nom }}
 {{ individu.prenom }}<br>
@@ -144,11 +83,5 @@ Bât D-Bureau D239 <br>
     Je vous prie de recevoir,  Madame, Monsieur, mes salutations distinguées. <br>
 </div>
 <div align="right"><b>Laurent THIBAUDEAU<br>Responsable administratif</b></div>
-{#<pdf:nextpage/>#}
-{#<div class="cadre etiquette">#}
-{#{{ individu.LIB_NOM_PAT_IND }}#}
-{#{{ individu.LIB_PR1_IND }}<br>#}
-{#{{ individu.get_adresse_html|safe }}#}
-{#</div>#}
 </body>
 </html>
