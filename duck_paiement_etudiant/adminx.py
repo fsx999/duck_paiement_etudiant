@@ -8,6 +8,7 @@ import openpyxl.styles.borders
 import openpyxl.styles.fills
 import openpyxl.styles.colors
 from openpyxl.writer.excel import save_virtual_workbook
+from duck_paiement_etudiant.forms import PaiementBackofficeForm
 from xadmin.layout import Layout, Fieldset, Container, Col
 from django.forms import Media
 from django.views.decorators.cache import never_cache
@@ -323,12 +324,10 @@ class PaiementInlineView(object):
     readonly_fields = ['num_paiement', 'bordereau']
     extra = 1
     max_num = 3
-    relfield_style = 'fk-ajax'
-    use_related_menu = True
+    form = PaiementBackofficeForm
 
 
 class PaiementAdminView(object):
-    use_related_menu = True
     fields = [
         'get_nom', 'get_prenom',
         'get_cod_etu', 'get_adresse',
