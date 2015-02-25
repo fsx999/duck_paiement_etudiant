@@ -114,7 +114,7 @@ class Bordereau(models.Model):
                             'montant': p.somme,
                             'code_diplome': p.etape.cod_dip,
                            })
-            recipients = get_recipients(p.cod_ind, self.annee)
+            recipients = get_recipients(p.cod_ind, p.cod_anu.cod_anu)
 
             mail = template.make_message(recipients=recipients,
                                          context=context)
@@ -255,7 +255,7 @@ class PaiementBackoffice(models.Model):
         }
         pdf_file = TemplateHtmlModel.objects.get(name='mail_relance').get_pdf(context)
         template_mail = Mail.objects.get(name='mail_relance')
-        recipients = get_recipients(self.cod_ind, self.cod_anu)
+        recipients = get_recipients(self.cod_ind, self.cod_anu.cod_anu)
 
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='impaye.pdf', content=pdf_file)
@@ -284,7 +284,7 @@ class PaiementBackoffice(models.Model):
         pdf_file = wkhtmltopdf([f.name])
         f.close()
         template_mail = Mail.objects.get(name='mail_regularisation')
-        recipients = get_recipients(self.cod_ind, self.cod_anu)
+        recipients = get_recipients(self.cod_ind, self.cod_anu.cod_anu)
 
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='regularisation.pdf', content=pdf_file)
