@@ -253,14 +253,7 @@ class PaiementBackoffice(models.Model):
             "cod_etp": self.etape.cod_etp,
             "paiement": self,
         }
-        template = render_to_string('mail_relance', context)
-        f = tempfile.NamedTemporaryFile(mode='w+b', bufsize=-1,
-                                        suffix='.html', prefix='tmp', dir=None,
-                                        delete=True)
-        f.write(template)
-        f.flush()
-        pdf_file = wkhtmltopdf([f.name])
-        f.close()
+        pdf_file = TemplateHtmlModel.objects.get(name='mail_relance').get_pdf(context)
         template_mail = Mail.objects.get(name='mail_relance')
         recipients = get_recipients(self.cod_ind, self.cod_anu)
 
