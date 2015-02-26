@@ -33,9 +33,9 @@ class Banque(models.Model):
     def _capitalize(self, field):
         return unicodedata.normalize('NFKD', unicode(field)).encode("ascii", "ignore").upper()
 
-    def save(self, force_insert=False, force_update=False, using=None):
+    def save(self, force_insert=False, force_update=False, using=None, **kwargs):
         self.nom = self._capitalize(self.nom)
-        return super(Banque, self).save(force_insert, force_update, using)
+        return super(Banque, self).save(force_insert, force_update, using, **kwargs)
 
     def __str__(self):
         return unicode(self.nom)
