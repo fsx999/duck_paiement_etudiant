@@ -137,25 +137,31 @@ class ImpressionBordereau(BaseAdminView):
         wb = Workbook()
         ws = wb.active
 
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        ws.page_margins.left = 0.3
+        ws.page_margins.right = 0.3
+        ws.page_margins.top = 0.4
+        ws.page_margins.bottom = 0.4
         thin_border = Border(left=Side(border_style=openpyxl.styles.borders.BORDER_THIN),
                              right=Side(border_style=openpyxl.styles.borders.BORDER_THIN),
                              top=Side(border_style=openpyxl.styles.borders.BORDER_THIN),
                              bottom=Side(border_style=openpyxl.styles.borders.BORDER_THIN))
         light_grey_fill = PatternFill(fill_type=openpyxl.styles.fills.FILL_SOLID, start_color="00FFFFFF")
         dark_grey_fill = PatternFill(fill_type=openpyxl.styles.fills.FILL_SOLID, start_color="00DDDDDD")
-        arial_bold_font = Font(name="Arial", bold=True)
-        arial_font = Font(name="Arial", bold=False)
+        arial_bold_font = Font(name="Arial", size=10, bold=True)
+        arial_font = Font(name="Arial", size=10, bold=False)
 
-        center_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-        left_alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-        right_alignment = Alignment(horizontal='right', vertical='center', wrap_text=True)
+        center_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True, shrink_to_fit=False)
+        left_alignment = Alignment(horizontal='left', vertical='center', wrap_text=True, shrink_to_fit=False)
+        right_alignment = Alignment(horizontal='right', vertical='center', wrap_text=True, shrink_to_fit=False)
 
-        arial_bold_style = Style(font=arial_bold_font)
+        arial_bold_style = Style(font=arial_bold_font, alignment=left_alignment)
         header_style = Style(font=arial_bold_font,
                              border=thin_border,
                              fill=dark_grey_fill,
                              alignment=center_alignment,
                              )
+        arial_style = Style(font=arial_font)
 
         ws.merge_cells('A1:H1')
         ws['A1'].style = arial_bold_style
@@ -165,6 +171,7 @@ class ImpressionBordereau(BaseAdminView):
         ws['A3'].style = arial_bold_style
         ws['A3'] = u"MODE DE PAIEMENT: {}".format(bordereau.get_type_paiement_display())
         ws.merge_cells('A4:H4')
+        ws['A4'].style = arial_style
         ws['A4'] = u"Paiement numéro {} / Bordereau numéro {}".format(bordereau.num_paiement,
                                                                       bordereau.num_bordereau)
         ## Print header
@@ -188,16 +195,17 @@ class ImpressionBordereau(BaseAdminView):
         ws['G6'] = u"€"
         ws['H6'] = u"PAYEUR - TITULAIRE DU COMPTE"
 
-        ws.column_dimensions['B'].width = 25
+        ws.column_dimensions['A'].width = 5
+        ws.column_dimensions['B'].width = 10
         if bordereau.type_paiement != "V":
-            ws.column_dimensions['C'].width = 35
+            ws.column_dimensions['C'].width = 25
         else:
             ws.column_dimensions['C'].width = 25
-        ws.column_dimensions['D'].width = 25
-        ws.column_dimensions['E'].width = 25
-        ws.column_dimensions['F'].width = 25
-        ws.column_dimensions['G'].width = 15
-        ws.column_dimensions['H'].width = 35
+        ws.column_dimensions['D'].width = 20
+        ws.column_dimensions['E'].width = 20
+        ws.column_dimensions['F'].width = 10
+        ws.column_dimensions['G'].width = 10
+        ws.column_dimensions['H'].width = 30
 
         row = 7
         start = 1
