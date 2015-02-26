@@ -34,6 +34,8 @@ class Banque(models.Model):
         return unicodedata.normalize('NFKD', unicode(field)).encode("ascii", "ignore").upper()
 
     def save(self, force_insert=False, force_update=False, using=None, **kwargs):
+        if not self.id:
+            self.id = Banque.objects.last().id + 1
         self.nom = self._capitalize(self.nom)
         return super(Banque, self).save(force_insert, force_update, using, **kwargs)
 
