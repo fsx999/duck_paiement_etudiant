@@ -11,7 +11,8 @@
     <div class="col col-xs-4">
     <h3>{{ bordereau.grouper }}</h3>
     {% for b in bordereau.list %}
-          <a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau' bordereau=b.id %}">{{ b }}</a><br />
+          <!-- a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau' bordereau=b.id %}">{{ b }}</a><br / -->
+          <a class="btn btn-primary" href="{% url 'bordereau_spreadsheet_pdf' bordereau=b.id %}">{{ b }} (PDF)</a><br />
     {% endfor %}
     </div>
 {% endfor %}

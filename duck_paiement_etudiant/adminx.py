@@ -8,6 +8,7 @@ import openpyxl.styles.borders
 import openpyxl.styles.fills
 import openpyxl.styles.colors
 from openpyxl.writer.excel import save_virtual_workbook
+from wkhtmltopdf.views import PDFTemplateView
 from duck_paiement_etudiant.forms import PaiementBackofficeForm
 from xadmin.layout import Layout, Fieldset, Container, Col
 from django.forms import Media
@@ -307,7 +308,7 @@ class ImpressionBordereau(BaseAdminView):
                            border=thin_border,
                            alignment=left_alignment,)
         cell = ws.cell(row=row+3, column=7)
-        cell.value = bordereau.date_cloture.strftime('%d/%m/%Y') if bordereau.date_cloture else "Non cloturé"
+        cell.value = bordereau.date_cloture.strftime('%d/%m/%Y') if bordereau.date_cloture else "Non clôturé"
         cell.style = Style(font=arial_bold_font,
                            border=thin_border,
                            alignment=center_alignment,)
@@ -324,6 +325,25 @@ class ImpressionBordereau(BaseAdminView):
         return response
 
 xadmin.site.register_view(r'^download_bordereau_spreadsheet/(?P<bordereau>\d+)$', ImpressionBordereau, 'impression_bordereau')
+
+class BordereauSpreadsheetView(PDFTemplateView):
+    filename = "Bordereau_{}_{}_{}_{}.pdf"
+    template_name = "duck_paiement_etudiant/bordereau_spreadsheet.html"
+    cmd_options = {
+        'orientation': 'landscape',
+        'page-size': 'A4'
+    }
+    def get_filename(self):
+        b = Bordereau.objects.get(pk=self.kwargs['bordereau'])
+        return self.filename.format(b.type_paiement, b.num_paiement, b.num_bordereau,
+                                    datetime.datetime.today().strftime('%d-%m-%Y'))
+
+    def get_context_data(self, **kwargs):
+        b = Bordereau.objects.get(pk=self.kwargs['bordereau'])
+        context = super(BordereauSpreadsheetView, self).get_context_data(**kwargs)
+        context['bordereau'] = b
+        context['total_sum'] = b.paiementbackoffice_set.all().aggregate(Sum('somme'))['somme__sum']
+        return context
 
 
 class PaiementInlineView(object):

@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{% static "bootstrap3/css/bootstrap.css" %}">
+    <script src="{% static "bootstrap3/js/bootstrap.js" %}"></script>
+    <title></title>
+    <style>
+        body {
+            font-size: 10px;
+        }
+        th {
+            background-color: #BBBBBB;
+            text-align: center;
+        }
+        .table > tbody > tr > td  {
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+        .light_bg {
+            background-color: white;
+        }
+        .dark_bg {
+            background-color: #BBBBBB;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-xs-6">
+            <strong>I.E.D. Frais d'enseignement à Distance {{ bordereau.annee.cod_anu }}/{{ bordereau.annee.cod_anu|add:1 }}</strong>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <strong>Mode de paiement: {{ bordereau.get_type_paiement_display }}</strong>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">Paiement numéro: {{ bordereau.num_paiement }} / Bordereau numéro {{ bordereau.num_bordereau }}</div>
+    </div>
+    <table class="table table-bordered table stripped">
+    {% if bordereau.type_paiement != "V" %}
+    <tr>
+        <td></td>
+        <th><strong>N° CHÈQUE</strong></th>
+        <th><strong>BANQUE</strong></th>
+        <th><strong>NOM ÉTUDIANT</strong></th>
+        <th><strong>PRÉNOM ÉTUDIANT</strong></th>
+        <th><strong>CODE ÉTUDIANT</strong></th>
+        <th><strong>€</strong></th>
+        <th><strong>PAYEUR - TITULAIRE DU COMPTE</strong></th>
+    </tr>
+    {% for paiement in bordereau.paiementbackoffice_set.all %}
+    <tr class="{% cycle 'light_bg' 'dark_bg' %}">
+        <td><strong>{{ forloop.counter }}</strong></td>
+        <td>{{ paiement.num_cheque }}</td>
+        <td>{{ paiement.nom_banque.nom }}</td>
+        <td>{{ paiement.etape.nom }}</td>
+        <td>{{ paiement.etape.prenom }}</td>
+        <td>{{ paiement.etape.cod_etu }}</td>
+        <td>{{ paiement.somme }}</td>
+        <td>{{ paiement.autre_payeur }}</td>
+    </tr>
+        {% if forloop.counter == 32%}
+            </table>
+            <div style="page-break-after:always"></div>
+            <table class="table table-bordered table stripped">
+        {% elif  forloop.counter|divisibleby:34 and forloop.counter > 34%}
+            </table>
+            <div style="page-break-after:always"></div>
+            <table class="table table-bordered table stripped">
+        {% endif %}
+    {% endfor %}
+    {% endif %}
+    {% if bordereau.type_paiement == "V" %}
+    <tr>
+        <td></td>
+        <th><strong>DATE PRÉVUE</strong></th>
+        <th><strong>DATE VIREMENT</strong></th>
+        <th><strong>NOM ÉTUDIANT</strong></th>
+        <th><strong>PRÉNOM ÉTUDIANT</strong></th>
+        <th><strong>CODE ÉTUDIANT</strong></th>
+        <th><strong>€</strong></th>
+        <th><strong>PAYEUR - TITULAIRE DU COMPTE</strong></th>
+    </tr>
+    {% for paiement in bordereau.paiementbackoffice_set.all %}
+    <tr class="{% cycle 'light_bg' 'dark_bg' %}">
+        <td><strong>{{ forloop.counter }}</strong></td>
+        <td>{{ paiement.date|date:"d/m/Y" }}</td>
+        <td>{{ paiement.date_virement|date:"d/m/Y" }}</td>
+        <td>{{ paiement.etape.nom }}</td>
+        <td>{{ paiement.etape.prenom }}</td>
+        <td>{{ paiement.etape.cod_etu }}</td>
+        <td>{{ paiement.somme }}</td>
+        <td>{{ paiement.autre_payeur }}</td>
+    </tr>
+
+    {% endfor %}
+    {% endif %}
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td><strong>Total</strong></td>
+        <td>{{ total_sum }}</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td><strong>Date de remise</strong></td>
+        <td>{{ bordereau.date_cloture|date:"d/m/Y"|default:"Non clôturé" }}</td>
+        <td></td>
+    </tr>
+
+    </table>
+</div>
+</body>
+</html>
