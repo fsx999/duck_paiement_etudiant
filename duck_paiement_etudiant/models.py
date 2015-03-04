@@ -11,11 +11,60 @@ from django.utils.encoding import python_2_unicode_compatible
 from mailrobot.models import MailBody, Mail
 from duck_utils.utils import email_ied, get_recipients
 from .managers import BordereauManager, BordereauAuditeurManager, PaiementBackofficeManager
-from django_apogee.models import InsAdmEtp, AnneeUni, Individu
+from django_apogee.models import InsAdmEtp, AnneeUni, Individu, Etape
 from datetime import date
 import time
 from wkhtmltopdf.utils import wkhtmltopdf
 from duck_utils.models import TemplateHtmlModel
+
+
+class InsAdmEtpPaiement(InsAdmEtp):
+    class Meta:
+        proxy = True
+        verbose_name = 'Inscription de l\'étudiants'
+        verbose_name_plural = 'Inscriptions des étudians'
+
+    @property
+    def settings_etape_paiement(self):
+        if not hasattr(self, '_settings_etape_paiement'):
+            self._settings_etape_paiement = SettingEtapePaiement.objects.get(etape__cod_etp=self.cod_etp,
+                                                                             cod_anu=self.cod_anu.cod_anu)
+        return self._settings_etape_paiement
+
+    # def can_demi_annee(self):
+    #     if self.nbr_ins_etp == 1 and self.settings_etape_paiement.demi_tarif:
+    #         return True
+    #     else:
+    #         return False
+
+    def get_tarif(self):
+        tarif = self.settings_etape_paiement.get_tarif_paiement(reins=self.is_reins, semestre=self.demi_annee)
+        if self.exoneration:
+            if self.exoneration == 'T':
+                tarif = 0
+            elif self.exoneration == 'P':
+                tarif /= 2.0
+        total_payer = 0
+        for x in self.paiements.filter(is_not_ok=False):
+            total_payer += x.somme
+        reste = tarif - total_payer
+        return "Total : %s | Saisi : %s | Reste %s" % (tarif, total_payer, reste)
+    get_tarif.short_description = "Tarif"
+
+    def get_reste(self):
+        tarif = self.settings_etape_paiement.get_tarif_paiement(reins=self.is_reins(), semestre=self.demi_annee)
+        if self.exoneration:
+            if self.exoneration == 'T':
+                tarif = 0
+            elif self.exoneration == 'P':
+                tarif /= 2.0
+        total_payer = 0
+        for x in self.paiements.filter(is_ok=False):
+            total_payer += x.somme
+        reste = tarif - total_payer
+        return reste
+
+
 
 @python_2_unicode_compatible
 class AnneeUniPaiement(models.Model):
@@ -25,6 +74,24 @@ class AnneeUniPaiement(models.Model):
     def __str__(self):
         return '{}/{}'.format(self.cod_anu, self.cod_anu+1)
 
+
+@python_2_unicode_compatible
+class SettingEtapePaiement(models.Model):
+    etape = models.ForeignKey(Etape, related_name='settings_etape_paiement')
+    cod_anu = models.IntegerField(default=2014)
+    tarif = models.FloatField(null=True)
+    demi_annee = models.BooleanField(default=False, help_text='peut s\'inscrire par semestre')
+    nb_paiment_max = models.IntegerField(default=2)
+    demi_tarif = models.BooleanField(default=False, help_text='demi tarif en cas de réins')
+
+    def __str__(self):
+        return '{} {}'.format(self.etape_id, self.cod_anu)
+
+    def get_tarif_paiement(self, reins=False, semestre=False):
+        tarif = self.tarif
+        if self.demi_tarif and reins or semestre:
+            tarif /= 2
+        return tarif
 
 @python_2_unicode_compatible
 class Banque(models.Model):
@@ -49,6 +116,7 @@ class Banque(models.Model):
         ordering = ['nom']
 
 
+@python_2_unicode_compatible
 class Bordereau(models.Model):
     """
     Bordereau
@@ -91,7 +159,7 @@ class Bordereau(models.Model):
             self.date_cloture = date.today()
             if not self.envoi_mail and not self.type_paiement == "V":
                 self.send_mail_cloture_bordereau()
-                if not settings.DEBUG: # if in Production, send the mail
+                if not settings.DEBUG:  # if in Production, send the mail
                     self.envoi_mail = True
 
         if not self.cloture and self.date_cloture:
@@ -114,13 +182,12 @@ class Bordereau(models.Model):
                             'num_cheque': p.num_cheque,
                             'num_etu': p.etape.cod_ind.cod_etu,
                             'montant': p.somme,
-                            'code_diplome': p.etape.cod_dip,
-                           })
+                            'code_diplome': p.etape.cod_dip, })
             recipients = get_recipients(p.cod_ind, p.cod_anu.cod_anu)
 
             mail = template.make_message(recipients=recipients,
                                          context=context)
-            if not idx % 100: # we make a pause every 100 mails
+            if not idx % 100:  # we make a pause every 100 mails
                 time.sleep(1)
 
             mail.send()
@@ -129,7 +196,6 @@ class Bordereau(models.Model):
                 break
 
             idx += 1
-
 
     def total_sum(self):
         """
@@ -143,25 +209,12 @@ class Bordereau(models.Model):
         """
         return self.all_valid().count()
 
-
-    #
-    # def get_annee(self):
-    #     return u"%s / %s" % (self.annee.cod_anu, int(self.annee.cod_anu) + 1)
-    # get_annee.short_description = u"Année"
-    #
-    # def save(self, force_insert=False, force_update=False, using=None):
-    #     if self.cloture and not self.date_cloture:
-    #         self.date_cloture = date.today()
-    #     if self.cloture and not self.envoi_mail:
-    #         self.do_envoi_mail()
-    #     return super(Bordereau, self).save(force_insert, force_update, using)
-    #
-
     def all_valid(self):
-        return self.paiementbackoffice_set.filter(type=self.type_paiement, etape__eta_iae='E') | self.paiementbackoffice_set.filter(
+        return self.paiementbackoffice_set.filter(type=self.type_paiement, etape__eta_iae='E') \
+            | self.paiementbackoffice_set.filter(
             type=self.type_paiement, etape__force_encaissement=True)
 
-    def __unicode__(self):
+    def __str__(self):
         type_paiement = u"auditeur" if self.type_bordereau == "A" else "etudiant"
         return u"%s paiement %s bordereau %s" % (type_paiement, self.num_paiement, self.num_bordereau)
 
@@ -172,13 +225,15 @@ class Bordereau(models.Model):
         verbose_name_plural = "Bordereaux"
 
 
+@python_2_unicode_compatible
 class PaiementBackoffice(models.Model):
     """ PaiementBackoffice
         C'est la class qui gére les paiements
     """
     etape = models.ForeignKey(InsAdmEtp, related_name="paiements", null=True)
     # cle primaire composite
-    cod_anu = models.ForeignKey(AnneeUniPaiement, verbose_name=u"Code Annee Universitaire", null=True, db_column='COD_ANU')
+    cod_anu = models.ForeignKey(AnneeUniPaiement, verbose_name=u"Code Annee Universitaire", null=True,
+                                db_column='COD_ANU')
     cod_ind = models.ForeignKey(Individu, db_column='COD_IND', null=True)
     cod_etp = models.CharField(u"Code Etape", max_length=8, null=True,
                                db_column="COD_ETP")
@@ -213,7 +268,7 @@ class PaiementBackoffice(models.Model):
         super(PaiementBackoffice, self).__init__(*args, **kwargs)
         self.__original_is_ok = self.is_not_ok
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.num_paiement)
 
     def save(self, force_insert=False, force_update=False, using=None, **kwargs):
@@ -280,54 +335,6 @@ class PaiementBackoffice(models.Model):
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='regularisation.pdf', content=pdf_file)
         mail.send()
-
-    # def envoi_mail_relance(self):
-    #
-    #     texte = u"""
-    #     Vous trouverez en pièce jointe un rappel de paiement.
-    #     """
-    #     template = "impayer/impaye_pdf.html"
-    #     objects = u"[IED] defaut de paiement des frais et droits de scolarité - IED annee universitaire 2012/2013."
-    #     individu = self.etape.COD_IND
-    #     f = open('impayer.pdf', 'wb')
-    #     context = {'static': os.path.join(PROJECT_DIR, 'documents/static/images/').replace('\\', '/')}
-    #     context['individu'] = individu
-    #     context['etape'] = self.etape
-    #     context['paiement'] = self
-    #     pisa.CreatePDF(render_to_string(template, context), f)
-    #     f.close()
-    #     email = EmailMessage(subject=objects, body=texte, from_email='nepasrepondre@iedparis8.net',
-    #                          to=[individu.get_email(), individu.email_ied(), 'nepasrepondre@iedparis8.net'])
-    #                          # to=['nepasrepondre@iedparis8.net'])
-    #                          # to=['nepasrepondre@iedparis8.net', 'evin.bayartan@iedparis8.net'])
-    #
-    #     f = open('impayer.pdf', 'r')
-    #     email.attach(filename='impayer.pdf', content=f.read())
-    #     email.send()
-    #     f.close()
-    #
-    # def envoi_mail_regularisation(self):
-    #     texte = u"""
-    #     Vous trouverez en pièce jointe la confirmation de votre régulation.
-    #     """
-    #     template = "impayer/regulation_pdf.html"
-    #     objects = u"[IED] defaut de paiement des frais et droits de scolarité - IED annee universitaire 2012/2013."
-    #     individu = self.etape.COD_IND
-    #     f = open('regularisation.pdf', 'wb')
-    #     context = {'static': os.path.join(PROJECT_DIR, 'documents/static/images/').replace('\\', '/')}
-    #     context['individu'] = individu
-    #     context['etape'] = self.etape
-    #     context['paiement'] = self
-    #     pisa.CreatePDF(render_to_string(template, context), f)
-    #     f.close()
-    #     email = EmailMessage(subject=objects, body=texte, from_email='nepasrepondre@iedparis8.net',
-    #                          to=[individu.get_email(), individu.email_ied(), 'nepasrepondre@iedparis8.net'])
-    #                          # to=['nepasrepondre@iedparis8.net'])
-    #
-    #     f = open('regularisation.pdf', 'r')
-    #     email.attach(filename='regularisation.pdf', content=f.read())
-    #     email.send()
-    #     f.close()
 
 
 # class AuditeurLibreApogee(models.Model):

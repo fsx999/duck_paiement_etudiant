@@ -14,7 +14,8 @@ from xadmin.layout import Layout, Fieldset, Container, Col
 from django.forms import Media
 from django.views.decorators.cache import never_cache
 from django_apogee.models import InsAdmEtp
-from duck_paiement_etudiant.models import AnneeUniPaiement, PaiementBackoffice, Banque, Bordereau
+from duck_paiement_etudiant.models import AnneeUniPaiement, PaiementBackoffice, Banque, Bordereau, SettingEtapePaiement, \
+    InsAdmEtpPaiement
 from xadmin.views import filter_hook, BaseAdminView
 from xadmin.filters import NumberFieldListFilter
 
@@ -362,13 +363,14 @@ class PaiementAdminView(object):
         'cod_etp', 'cod_cge',
         'get_eta_iae', 'exoneration',
         'demi_annee',
-        'force_encaissement']
+        'force_encaissement',
+        'get_tarif']
     readonly_fields = [
         'get_nom', 'get_prenom',
         'get_cod_etu', 'get_adresse',
         'cod_etp', 'cod_cge',
         'get_eta_iae',
-        'demi_annee']
+        'get_tarif']
     inlines = [PaiementInlineView]
     search_fields = ['cod_ind__cod_etu']
     hidden_menu = True
@@ -383,7 +385,8 @@ class PaiementAdminView(object):
                     'cod_etp', 'cod_cge',
                     'get_eta_iae', 'exoneration',
                     'demi_annee',
-                    'force_encaissement'
+                    'force_encaissement',
+                    'get_tarif'
                     , css_class="unsort no_title"), horizontal=True, span=12)
             ))
     pattern = r'^%s/%s/(?P<year>\d+)/'
@@ -392,9 +395,11 @@ class PaiementAdminView(object):
         return {'year': 2014}
 
     def queryset(self):
-        queryset = super(PaiementAdminView, self).queryset()
-        return InsAdmEtp.objects.filter(cod_anu=self.kwargs['year'], cod_cge='IED')
-        # return queryset.filter(cod_anu=self.kwargs['year'])
+        return InsAdmEtpPaiement.objects.filter(cod_anu=self.kwargs['year'], cod_cge='IED', tem_iae_prm='O')
+
+    # def get_tarif(self, obj):
+    #     print obj.get_tarif()
+    #     return obj.get_tarif()
 
     @filter_hook
     def get_breadcrumb(self):
@@ -518,6 +523,7 @@ class BordereauAdmin(object):
 
 
 
-xadmin.site.register(InsAdmEtp, PaiementAdminView)
+xadmin.site.register(InsAdmEtpPaiement, PaiementAdminView)
 xadmin.site.register(Banque, BanqueAdmin)
 xadmin.site.register(Bordereau, BordereauAdmin)
+xadmin.site.register(SettingEtapePaiement)
