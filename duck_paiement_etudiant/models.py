@@ -262,28 +262,18 @@ class PaiementBackoffice(models.Model):
         mail.attach(filename='impaye.pdf', content=pdf_file)
         mail.send()
 
-
     def send_mail_regularisation(self):
         """
         """
         # Creation du contexte
         context = {
-            "individu": {
-                "nom": self.etape.nom(),
-                "prenom": self.etape.prenom(),
-                "adresse": self.etape.adresse(),
-                "cod_etu": self.etape.cod_ind.cod_etu
-            },
+            "nom": self.etape.nom(),
+            "prenom": self.etape.prenom(),
+            "adresse": self.etape.adresse(),
+            "cod_etu": self.etape.cod_ind.cod_etu,
             "cod_etp": self.etape.cod_etp,
         }
-        template = render_to_string('mail_regularisation', context)
-        f = tempfile.NamedTemporaryFile(mode='w+b', bufsize=-1,
-                                        suffix='.html', prefix='tmp', dir=None,
-                                        delete=True)
-        f.write(template)
-        f.flush()
-        pdf_file = wkhtmltopdf([f.name])
-        f.close()
+        pdf_file = TemplateHtmlModel.objects.get(name='mail_regularisation').get_pdf(context)
         template_mail = Mail.objects.get(name='mail_regularisation')
         recipients = get_recipients(self.cod_ind, self.cod_anu.cod_anu)
 

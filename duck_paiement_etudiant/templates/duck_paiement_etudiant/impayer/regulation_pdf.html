@@ -1,6 +1,8 @@
+{% load static %}
 <html>
 <head>
     <title></title>
+    <link href="{% static "bootstrap3/css/bootstrap.min.css" %}" rel="stylesheet">
     <style type="text/css">
         body {
             text-align: justify;
@@ -61,15 +63,13 @@
 </head>
 
 <body>
-<table>
-    <tr>
-        <td><img id="logo_ied" src="{{ static }}/logo-ied.jpg"/></td>
-        <td class="cadre nom">
-            {{ nom }}
+<div class="container">
+<div class="row">
+    <div class="col-xs-6"><img id="logo_ied" src="{% static "images/logo-ied.jpg"%} "/></div>
+    <div class="col-xs-6"><div class="pull-right small">{{ nom }}
 {{ prenom }}<br>
-{{ adresse|safe }}</td>
-    </tr>
-</table>
+{{ adresse|safe }}</div></div>
+</div>
 <br>
 <div align="right">
     Saint-Denis <br>
@@ -102,6 +102,6 @@ Bât D-Bureau D239 <br>
     Je vous prie de recevoir,  Madame, Monsieur, mes salutations distinguées. <br>
 </div>
 <div align="right"><b>Laurent THIBAUDEAU<br>Responsable administratif</b></div>
-
+</div>
 </body>
 </html>
