@@ -11,14 +11,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        # for etape in Etape.objects.by_centre_gestion('IED'):
-        #     SettingEtapePaiement.objects.get_or_create(etape=etape, cod_anu=2014)
-        #
-        # for s in SettingsEtape.objects.filter(annee_id='2014'):
-        #     b = s.settings_etape_paiement.get(cod_anu=2014)
-        #     b.tarif = s.frais
-        #     b.demi_tarif  = s.demi_tarif
-        #     b.demi_annee = s.semestre
-        #     b.nb_paiement_max = s.nb_paiement
-        #     b.save()
-        print InsAdmEtpPaiement.objects.filter(cod_ind__cod_etu=10275213, cod_anu=2014).first().get_tarif()
+        for etape in Etape.objects.by_centre_gestion('IED'):
+            SettingEtapePaiement.objects.get_or_create(etape=etape, cod_anu=2014)
+
+        for s in SettingsEtape.objects.filter(annee_id='2014'):
+            b = s.settings_etape_paiement.get(cod_anu=2014)
+            b.tarif = s.frais
+            b.demi_tarif  = s.demi_tarif
+            b.demi_annee = s.semestre
+            b.nb_paiement_max = s.nb_paiement
+            b.save()
