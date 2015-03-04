@@ -246,14 +246,13 @@ class PaiementBackoffice(models.Model):
         """
         # Creation du contexte
         context = {
-            "individu": {
-                "nom": self.etape.nom(),
-                "prenom": self.etape.prenom(),
-                "adresse": self.etape.adresse(),
-                "cod_etu": self.etape.cod_ind.cod_etu
-            },
+            "nom": self.etape.nom(),
+            "prenom": self.etape.prenom(),
+            "adresse": self.etape.adresse(),
+            "cod_etu": self.etape.cod_ind.cod_etu,
             "cod_etp": self.etape.cod_etp,
-            "paiement": self,
+            "num_paiement": self.num_paiement,
+            "somme": self.somme,
         }
         pdf_file = TemplateHtmlModel.objects.get(name='mail_relance').get_pdf(context)
         template_mail = Mail.objects.get(name='mail_relance')

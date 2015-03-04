@@ -65,9 +65,9 @@
     <tr>
         <td><img id="logo_ied" src="{{ static }}/logo-ied.jpg"/></td>
         <td class="cadre nom">
-            {{ individu.nom }}
-{{ individu.prenom }}<br>
-{{ individu.adresse|safe }}</td>
+            {{ nom }}
+{{ prenom }}<br>
+{{ adresse|safe }}</td>
     </tr>
 </table>
 <br>
@@ -78,7 +78,7 @@
 
 <div><b>
     <u>Objet</u> : Paiements des frais d'inscription.<br>
-    <u>Numéro d'étudiant</u> : {{ individu.cod_etu }} {{ cod_etp }}</b>
+    <u>Numéro d'étudiant</u> : {{ cod_etu }} {{ cod_etp }}</b>
 </div>
 
 <div>

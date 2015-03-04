@@ -4,19 +4,20 @@
     <link href="{% static "bootstrap3/css/bootstrap.min.css" %}" rel="stylesheet">
     <style type="text/css">
        div.break { page-break-after: always }
+        #logo_ied {
+            zoom: 50%;
+        }
     </style>
 </head>
 <body>
+<div class="container">
+<div class="row">
+    <div class="col-xs-6"><img id="logo_ied" src="{% static "images/logo-ied.jpg"%} "/></div>
+    <div class="col-xs-6"><div class="pull-right small">{{ nom }}
+{{ prenom }}<br>
+{{ adresse|safe }}</div></div>
+</div>
 
-<table>
-    <tr>
-        <td><img id="logo_ied" src="{% static "images/logo-ied.jpg"%} "/></td>
-        <td class="cadre nom">
-            {{ individu.nom }}
-{{ individu.prenom }}<br>
-{{ individu.adresse|safe }}</td>
-    </tr>
-</table>
 <br>
 <div align="right">
     Saint-Denis <br>
@@ -25,7 +26,7 @@
 
 <div><b>
     <u>Objet</u> : Paiements des frais d'inscription.<br>
-    <u>Numéro d'étudiant</u> : {{ individu.cod_etu }} {{ cod_etp }}</b>
+    <u>Numéro d'étudiant</u> : {{ cod_etu }} {{ cod_etp }}</b>
 </div>
 
 <div>
@@ -41,19 +42,19 @@
 </div>
 
 <div>
-    Or, <b>sauf erreur de notre part, <span class="red"> le virement numéro {{ paiement.num_paiement }} d'un montant
-    {{ paiement.somme|floatformat:"-2" }} €,
+    Or, <b>sauf erreur de notre part, <span class="red"> le virement numéro {{ num_paiement }} d'un montant
+    {{ somme|floatformat:"-2" }} €,
     programmé(s) par vous, n’apparait ou n'apparaissent</span> pas sur les relevés de compte de l’Université Paris 8
     .</b>
     <br>
     <br>
     <b>Nous vous serions donc reconnaissants de : </b>
     <br>
-    1°) <b>au cas où vous avez déjà payé,</b> de bien vouloir prendre contact avec votre banque afin de vérifier que la ou les autorisations de virement que vous avez établies ont bien donné lieu au paiement de la somme de {{ paiement.somme|floatformat:"-2" }} €,
+    1°) <b>au cas où vous avez déjà payé,</b> de bien vouloir prendre contact avec votre banque afin de vérifier que la ou les autorisations de virement que vous avez établies ont bien donné lieu au paiement de la somme de {{ somme|floatformat:"-2" }} €,
     au profit de l’Université Paris 8.
 Merci dans ce cas, de nous faire parvenir le <u>justificatif</u> de ce paiement. <br> <br>
 
-    2°)<b>au cas où le virement n’aurait pas été réalisé,</b>merci d'établir un chèque d'un montant de {{ paiement.somme|floatformat:"-2" }} €
+    2°)<b>au cas où le virement n’aurait pas été réalisé,</b>merci d'établir un chèque d'un montant de {{ somme|floatformat:"-2" }} €
 (encaissement de tous les paiements manquants dès réception).
     Ce chèque étant à établir exclusivement <u>à l’ordre de « l’Agent comptable Université Paris 8 »</u>. <br><br>
     <i>Il est impératif d'indiquer votre nunéro d'étudiant au dos du chèque, le code diplôme ainsi que la mention
@@ -71,17 +72,18 @@ Ceci permettra également de lever le blocage administratif et pédagogique de v
     <u>Quelle que soit votre situation (1°ou 2°) vous adresserez votre courrier (y joindre copie de ce mail) à
         l’adresse suivante :</u><br>
 </div>
-<div>
-<center>IED - Université Paris 8 Vincennes St Denis <br>
+<div class="small center-block">
+IED - Université Paris 8 Vincennes St Denis <br>
 Madame OULD-HOCINE Farida <br>
 Madame BAYARTAN Evin<br>
 Bât D-Bureau D239 <br>
 2 rue de la Liberté<br>
-93 526 SAINT-DENIS Cedex</center><br>
+93 526 SAINT-DENIS Cedex<br>
 </div>
 <div>
     Je vous prie de recevoir,  Madame, Monsieur, mes salutations distinguées. <br>
 </div>
 <div align="right"><b>Laurent THIBAUDEAU<br>Responsable administratif</b></div>
+    </div>
 </body>
 </html>

@@ -393,7 +393,8 @@ class PaiementAdminView(object):
 
     def queryset(self):
         queryset = super(PaiementAdminView, self).queryset()
-        return queryset.filter(cod_anu=self.kwargs['year'])
+        return InsAdmEtp.objects.filter(cod_anu=self.kwargs['year'], cod_cge='IED')
+        # return queryset.filter(cod_anu=self.kwargs['year'])
 
     @filter_hook
     def get_breadcrumb(self):
