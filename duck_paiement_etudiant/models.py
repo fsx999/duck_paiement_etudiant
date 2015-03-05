@@ -21,7 +21,7 @@ from duck_utils.models import TemplateHtmlModel
 class InsAdmEtpPaiement(InsAdmEtp):
     class Meta:
         proxy = True
-        verbose_name = 'Inscription de l\'étudiants'
+        verbose_name = 'Inscription de l\'étudiant'
         verbose_name_plural = 'Inscriptions des étudians'
 
     @property
@@ -30,12 +30,6 @@ class InsAdmEtpPaiement(InsAdmEtp):
             self._settings_etape_paiement = SettingEtapePaiement.objects.get(etape__cod_etp=self.cod_etp,
                                                                              cod_anu=self.cod_anu.cod_anu)
         return self._settings_etape_paiement
-
-    # def can_demi_annee(self):
-    #     if self.nbr_ins_etp == 1 and self.settings_etape_paiement.demi_tarif:
-    #         return True
-    #     else:
-    #         return False
 
     def get_tarif(self):
         tarif = self.settings_etape_paiement.get_tarif_paiement(reins=self.is_reins, semestre=self.demi_annee)
@@ -63,7 +57,6 @@ class InsAdmEtpPaiement(InsAdmEtp):
             total_payer += x.somme
         reste = tarif - total_payer
         return reste
-
 
 
 @python_2_unicode_compatible
