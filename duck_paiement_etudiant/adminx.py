@@ -334,6 +334,7 @@ class BordereauSpreadsheetView(PDFTemplateView):
         'orientation': 'landscape',
         'page-size': 'A4'
     }
+
     def get_filename(self):
         b = Bordereau.objects.get(pk=self.kwargs['bordereau'])
         return self.filename.format(b.type_paiement, b.num_paiement, b.num_bordereau,
