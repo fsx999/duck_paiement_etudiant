@@ -345,7 +345,7 @@ class BordereauSpreadsheetView(PDFTemplateView):
         b = Bordereau.objects.get(pk=self.kwargs['bordereau'])
         context = super(BordereauSpreadsheetView, self).get_context_data(**kwargs)
         context['bordereau'] = b
-        context['total_sum'] = b.paiementbackoffice_set.all().order_by('id').aggregate(Sum('somme'))['somme__sum']
+        context['total_sum'] = b.paiementbackoffice_set.all().order_by('-id').aggregate(Sum('somme'))['somme__sum']
         return context
 
 

@@ -287,7 +287,7 @@ class PaiementBackoffice(models.Model):
 
             self.__original_is_ok = self.is_not_ok
 
-        super(PaiementBackoffice, self).save(force_insert, force_update, using)
+        super(PaiementBackoffice, self).save(force_insert, force_update, using, **kwargs)
 
     def send_mail_relance(self):
         """
