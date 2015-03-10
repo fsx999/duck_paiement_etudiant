@@ -256,6 +256,7 @@ class PaiementBackoffice(models.Model):
         db_table = u"pal_paiement_backoffice"
         verbose_name = "Paiement"
         verbose_name_plural = "Paiements"
+        ordering = ['id']
 
     def __init__(self, *args, **kwargs):
         super(PaiementBackoffice, self).__init__(*args, **kwargs)
