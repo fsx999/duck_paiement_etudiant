@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db import models
 import unicodedata
 from django.db.models import Sum
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.utils.encoding import python_2_unicode_compatible
@@ -31,6 +33,15 @@ class InsAdmEtpPaiement(InsAdmEtp):
                                                                              cod_anu=self.cod_anu.cod_anu)
         return self._settings_etape_paiement
 
+    def get_total(self):
+        tarif = self.settings_etape_paiement.get_tarif_paiement(reins=self.is_reins, semestre=self.demi_annee)
+        if self.exoneration:
+            if self.exoneration == 'T':
+                tarif = 0
+            elif self.exoneration == 'P':
+                tarif /= 2.0
+        return tarif
+
     def get_tarif(self):
         tarif = self.settings_etape_paiement.get_tarif_paiement(reins=self.is_reins, semestre=self.demi_annee)
         if self.exoneration:
@@ -46,17 +57,23 @@ class InsAdmEtpPaiement(InsAdmEtp):
     get_tarif.short_description = "Tarif"
 
     def get_reste(self):
-        tarif = self.settings_etape_paiement.get_tarif_paiement(reins=self.is_reins(), semestre=self.demi_annee)
+        tarif = self.settings_etape_paiement.get_tarif_paiement(reins=self.is_reins, semestre=self.demi_annee)
         if self.exoneration:
             if self.exoneration == 'T':
                 tarif = 0
             elif self.exoneration == 'P':
                 tarif /= 2.0
         total_payer = 0
-        for x in self.paiements.filter(is_ok=False):
+        for x in self.paiements.filter(is_not_ok=False):
             total_payer += x.somme
         reste = tarif - total_payer
         return reste
+
+
+class CalculTarif(models.Model):
+    etape = models.ForeignKey(InsAdmEtp)
+    total = models.FloatField(null=True, blank=True)
+    reste = models.FloatField(null=True, blank=True)
 
 
 @python_2_unicode_compatible
@@ -329,6 +346,16 @@ class PaiementBackoffice(models.Model):
         mail = template_mail.make_message(recipients=recipients)
         mail.attach(filename='regularisation.pdf', content=pdf_file)
         mail.send()
+
+@receiver(post_save, sender=PaiementBackoffice)
+def update_total_and_reste(sender, **kwargs):
+    instance = kwargs.get('instance', None)
+    ct = CalculTarif.objects.get_or_create(etape=instance.etape)[0]
+    etape_paiement = instance.etape
+    etape_paiement.__class__ = InsAdmEtpPaiement
+    ct.total = etape_paiement.get_total()
+    ct.reste = etape_paiement.get_reste()
+    ct.save()
 
 
 # class AuditeurLibreApogee(models.Model):
