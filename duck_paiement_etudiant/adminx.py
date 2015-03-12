@@ -1,5 +1,6 @@
 # coding=utf-8
 import datetime
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Sum, Count
 from django.http import HttpResponse
 from openpyxl import Workbook
@@ -43,6 +44,71 @@ class GestionFinanciereAnnee(views.Dashboard):
         self.widgets = self.get_widgets()
         return self.template_response(self.base_template, self.get_context())
 xadmin.site.register_view(r'^gestion_financiere/$', GestionFinanciereAnnee, 'gestion_financiere_annee')
+
+
+class ListeImpayesAnnee(views.Dashboard):
+    base_template = 'duck_paiement_etudiant/liste_impayes_annee.html'
+    widget_customiz = False
+
+    def get_context(self):
+        context = super(ListeImpayesAnnee, self).get_context()
+        context['liste_impayes'] = PaiementBackoffice.objects.filter(is_not_ok__exact=True)
+        # context['liste_impayes'] = PaiementBackoffice.objects.filter(is_not_ok__exact=False)[0:10]
+        context['years'] = AnneeUniPaiement.objects.all().order_by('-cod_anu')
+        context['year'] = self.kwargs.get('year', 2014)
+        return context
+
+    @filter_hook
+    def get_breadcrumb(self):
+        return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
+                {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
+                {'title': 'Liste des impayés'}]
+
+    @never_cache
+    def get(self, request, *args, **kwargs):
+        self.widgets = self.get_widgets()
+        return self.template_response(self.base_template, self.get_context())
+xadmin.site.register_view(r'^liste_impayes/(?P<year>\d+)$', ListeImpayesAnnee, 'liste_impayes_annee')
+
+
+class ListeInscritptionSansPaiementAnnee(views.Dashboard):
+    base_template = 'duck_paiement_etudiant/liste_inscription_sans_paiement_annee.html'
+    widget_customiz = False
+
+    def get_context(self):
+        context = super(ListeInscritptionSansPaiementAnnee, self).get_context()
+        context['years'] = AnneeUniPaiement.objects.all().order_by('-cod_anu')
+        context['inscriptions'] = InsAdmEtp.inscrits.filter(paiements__isnull=True).order_by("cod_ind__lib_nom_pat_ind")
+        return context
+
+    @filter_hook
+    def get_breadcrumb(self):
+        return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
+                {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
+                {'title': 'Gestion financière'}]
+
+    @never_cache
+    def get(self, request, *args, **kwargs):
+        self.widgets = self.get_widgets()
+        context = self.get_context()
+        page = request.GET.get('page')
+        paginator = Paginator(context['inscriptions'], 100)
+        try:
+            context['inscriptions'] = paginator.page(page)
+
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            context['inscriptions'] = paginator.page(1)
+
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            context['inscriptions'] = paginator.page(paginator.num_pages)
+
+        return self.template_response(self.base_template, context)
+
+xadmin.site.register_view(r'^liste_inscription_sans_paiement/(?P<year>\d+)$',
+                          ListeInscritptionSansPaiementAnnee,
+                          'liste_inscription_valide_sans_paiement')
 
 
 class StatistiquesBordereau(views.Dashboard):

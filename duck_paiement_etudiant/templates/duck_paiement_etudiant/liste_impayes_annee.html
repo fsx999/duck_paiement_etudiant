@@ -1,0 +1,24 @@
+{% extends "xadmin/base_site.html" %}
+{% block nav_title %}Liste des impayés {{ year }}{% endblock %}
+{% block content %}
+    <table class="table table-bordered table-striped">
+        <tr>
+            <td><strong>Nom</strong></td>
+            <td><strong>Prénom</strong></td>
+            <td><strong>Code étudiant</strong></td>
+            <td><strong>Code étape</strong></td>
+            <td><strong>Somme</strong></td>
+            <td><strong>Type</strong></td>
+        </tr>
+{% for i in liste_impayes %}
+    <tr>
+        <td>{{ i.etape.nom }}</td>
+        <td>{{ i.etape.prenom }}</td>
+        <td>{{ i.etape.cod_etu }}</td>
+        <td>{{ i.etape.cod_etp }}</td>
+        <td>{{ i.somme }}</td>
+        <td>{{ i.get_type_display }}</td>
+    </tr>
+{% endfor %}
+    </table>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "xadmin/base_site.html" %}
+{% block nav_title %}Inscriptions sans paiement {{ year }}{% endblock %}
+{% block content %}
+    <table class="table table-bordered table-striped">
+        <tr>
+            <td><strong>Nom</strong></td>
+            <td><strong>Prénom</strong></td>
+            <td><strong>Code étudiant</strong></td>
+            <td><strong>Code étape</strong></td>
+        </tr>
+        {% for i in inscriptions %}
+            <tr>
+                <td>{{ i.nom }}</td>
+                <td>{{ i.prenom }}</td>
+                <td>{{ i.cod_etu }}</td>
+                <td>{{ i.cod_etp }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+     <nav>
+        <ul class="pagination">
+            {% for nb in inscriptions.paginator.page_range %}
+                <li{% if nb == inscriptions.number %} class="active"{% endif %}><a href="?page={{ nb }}">{{ nb }}</a></li>
+            {% endfor %}
+        </ul>
+    </nav>
+{% endblock %}

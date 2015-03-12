@@ -303,7 +303,7 @@ class PaiementBackoffice(models.Model):
             "num_paiement": self.num_paiement,
             "somme": self.somme,
         }
-        pdf_file = TemplateHtmlModel.objects.get(name='mail_relance').get_pdf(context)
+        pdf_file = TemplateHtmlModel.objects.get(name='mail_relance').get_pdf_file(context)
         template_mail = Mail.objects.get(name='mail_relance')
         recipients = get_recipients(self.cod_ind, self.cod_anu.cod_anu)
 
@@ -322,7 +322,7 @@ class PaiementBackoffice(models.Model):
             "cod_etu": self.etape.cod_ind.cod_etu,
             "cod_etp": self.etape.cod_etp,
         }
-        pdf_file = TemplateHtmlModel.objects.get(name='mail_regularisation').get_pdf(context)
+        pdf_file = TemplateHtmlModel.objects.get(name='mail_regularisation').get_pdf_file(context)
         template_mail = Mail.objects.get(name='mail_regularisation')
         recipients = get_recipients(self.cod_ind, self.cod_anu.cod_anu)
 

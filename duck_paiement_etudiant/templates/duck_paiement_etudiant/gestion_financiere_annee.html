@@ -25,4 +25,22 @@
 
         </tbody>
     </table>
+
+    <table class="table table-bordered table-striped">
+        <thead>
+        <tr>
+            <th>Impayés</th>
+            <th>Inscription sans paiements</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for year in years %}
+            <tr>
+                <td><a class="btn btn-primary" href="{% url 'xadmin:liste_impayes_annee' year.cod_anu %}">Impayés {{ year }}</a></td>
+                <td><a class="btn btn-primary" href="{% url 'xadmin:liste_inscription_valide_sans_paiement' year.cod_anu%}">Inscription valide sans paiement {{ year }}</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
 {% endblock %}
