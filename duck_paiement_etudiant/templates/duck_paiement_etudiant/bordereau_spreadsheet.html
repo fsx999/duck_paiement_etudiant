@@ -42,6 +42,9 @@
         <div class="col-xs-6">Paiement numéro: {{ bordereau.num_paiement }} / Bordereau numéro {{ bordereau.num_bordereau }}</div>
     </div>
     <table class="table table-bordered table stripped">
+    {% with bordereau.all_valid as paiements %}
+
+
     {% if bordereau.type_paiement != "V" %}
     <tr>
         <td></td>
@@ -53,7 +56,7 @@
         <th><strong>€</strong></th>
         <th><strong>PAYEUR - TITULAIRE DU COMPTE</strong></th>
     </tr>
-    {% for paiement in bordereau.paiementbackoffice_set.all %}
+    {% for paiement in paiements %}
     <tr class="{% cycle 'light_bg' 'dark_bg' %}">
         <td><strong>{{ forloop.counter }}</strong></td>
         <td>{{ paiement.num_cheque }}</td>
@@ -86,7 +89,7 @@
         <th><strong>€</strong></th>
         <th><strong>PAYEUR - TITULAIRE DU COMPTE</strong></th>
     </tr>
-    {% for paiement in bordereau.paiementbackoffice_set.all %}
+    {% for paiement in paiements %}
     <tr class="{% cycle 'light_bg' 'dark_bg' %}">
         <td><strong>{{ forloop.counter }}</strong></td>
         <td>{{ paiement.date|date:"d/m/Y" }}</td>
@@ -120,7 +123,7 @@
         <td>{{ bordereau.date_cloture|date:"d/m/Y"|default:"Non clôturé" }}</td>
         <td></td>
     </tr>
-
+    {% endwith %}
     </table>
 </div>
 </body>

@@ -184,6 +184,7 @@ class ImpressionBordereau(BaseAdminView):
         ws['F6'].style = header_style
         ws['G6'].style = header_style
         ws['H6'].style = header_style
+        ws['I6'].style = header_style
         if bordereau.type_paiement != "V":
             ws['B6'] = u"N° CHÈQUE"
             ws['C6'] = u"BANQUE"
@@ -196,6 +197,7 @@ class ImpressionBordereau(BaseAdminView):
         ws['F6'] = u"CODE ÉTUDIANT"
         ws['G6'] = u"€"
         ws['H6'] = u"PAYEUR - TITULAIRE DU COMPTE"
+        ws['I6'] = u"ANNULATION"
 
         ws.column_dimensions['A'].width = 5
         ws.column_dimensions['B'].width = 10
@@ -284,6 +286,13 @@ class ImpressionBordereau(BaseAdminView):
             ## Payeur - Titulaire du compte
             cell = ws.cell(row=row, column=8)
             cell.value = paiement.autre_payeur
+            cell.style = Style(font=arial_font,
+                               border=thin_border,
+                               fill=light_grey_fill if start%2 else dark_grey_fill,
+                               alignment=left_alignment,)
+            # Annulation
+            cell = ws.cell(row=row, column=9)
+            cell.value = paiement.etape.annulation()
             cell.style = Style(font=arial_font,
                                border=thin_border,
                                fill=light_grey_fill if start%2 else dark_grey_fill,
