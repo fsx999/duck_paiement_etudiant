@@ -151,6 +151,7 @@ class Bordereau(models.Model):
         ('A', u'Auditeur Libre')),
         default="N",
         max_length=1)
+    comment = models.CharField(max_length=120, null=True, blank=True)
 
     def is_plein(self):
         volume = {

@@ -536,7 +536,7 @@ class BordereauAdmin(object):
                        'get_annee', 'get_type_paiement',
                        'get_type_bordereau', 'date_cloture',
                        'envoi_mail',
-                       'get_total_sum', 'get_nb_cheque_total')
+                       'get_total_sum', 'get_nb_cheque_total', 'comment')
     readonly_fields = ('num_bordereau', 'num_paiement',
                        'get_annee', 'get_type_paiement',
                        'get_type_bordereau', 'date_cloture',
@@ -555,8 +555,8 @@ class BordereauAdmin(object):
                     'get_type_bordereau', 'date_cloture',
                     'get_total_sum',
                     'get_nb_cheque_total',
-                    'cloture'
-                    , css_class="unsort no_title"), horizontal=True, span=12)
+                    'cloture', 'comment',
+                    css_class="unsort no_title"), horizontal=True, span=12)
             ))
     pattern = r'^%s/%s/(?P<year>\d+)/'
 
