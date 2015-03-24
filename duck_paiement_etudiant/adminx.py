@@ -543,7 +543,7 @@ class BordereauAdmin(object):
                        'envoi_mail',
                        'get_total_sum', 'get_nb_cheque_total')
     hidden_menu = True
-    list_display = ('__str__', 'num_paiement', 'type_paiement', 'date_cloture', 'cloture')
+    list_display = ('__str__', 'num_paiement', 'type_paiement', 'date_cloture', 'cloture',  'comment')
     list_filter = ('type_paiement', ('num_paiement', MyFilter))
     form_layout = Layout(Container(Col('full',
                 Fieldset(
