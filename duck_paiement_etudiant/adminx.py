@@ -373,7 +373,7 @@ class ImpressionBordereau(BaseAdminView):
                            border=thin_border,
                            alignment=left_alignment,)
         cell = ws.cell(row=row+1, column=7)
-        cell.value = bordereau.paiementbackoffice_set.all().aggregate(Sum('somme'))['somme__sum']
+        cell.value = bordereau.all_valid().aggregate(Sum('somme'))['somme__sum']
         cell.style = Style(font=arial_bold_font,
                            border=thin_border,
                            alignment=right_alignment,)
@@ -420,7 +420,7 @@ class BordereauSpreadsheetView(PDFTemplateView):
         b = Bordereau.objects.get(pk=self.kwargs['bordereau'])
         context = super(BordereauSpreadsheetView, self).get_context_data(**kwargs)
         context['bordereau'] = b
-        context['total_sum'] = b.paiementbackoffice_set.order_by('-id').all().aggregate(Sum('somme'))['somme__sum']
+        context['total_sum'] = b.all_valid().order_by('-id').aggregate(Sum('somme'))['somme__sum']
         return context
 
 
