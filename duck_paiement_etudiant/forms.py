@@ -7,6 +7,7 @@ from duck_paiement_etudiant.models import PaiementBackoffice
 class PaiementBackofficeForm(ModelForm):
     class Meta:
         model = PaiementBackoffice
+        exclude = []
 
     def clean(self):
         if self.cleaned_data['type'] in ['C', 'B', 'E']: # type chèque

@@ -6,8 +6,8 @@ __author__ = 'paul'
 
 class BordereauManager(models.Manager):
 
-    def get_query_set(self):
-        return super(BordereauManager, self).get_query_set().filter(type_bordereau='N')
+    def get_queryset(self):
+        return super(BordereauManager, self).get_queryset().filter(type_bordereau='N')
 
     def by_year(self, year):
         return self.filter(annee__cod_anu=year)
@@ -29,8 +29,8 @@ class BordereauManager(models.Manager):
 
 class BordereauAuditeurManager(BordereauManager):
 
-    def get_query_set(self):
-        return super(BordereauAuditeurManager, self).get_query_set().filter(type_bordereau='A')
+    def get_queryset(self):
+        return super(BordereauAuditeurManager, self).get_queryset().filter(type_bordereau='A')
 
     # def last_bordereau(self, num_paiement):
     #     try:

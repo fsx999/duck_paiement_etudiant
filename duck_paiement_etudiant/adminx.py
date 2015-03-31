@@ -393,7 +393,7 @@ class ImpressionBordereau(BaseAdminView):
 
     def get(self, request, *args, **kwargs):
         b = Bordereau.objects.get(pk=kwargs['bordereau'])
-        response = HttpResponse(save_virtual_workbook(self.create_spreadsheet(b)), mimetype='application/vnd.ms-excel')
+        response = HttpResponse(save_virtual_workbook(self.create_spreadsheet(b)), content_type='application/vnd.ms-excel')
         date = datetime.datetime.today().strftime('%d-%m-%Y')
         response['Content-Disposition'] = 'attachment; filename={}_{}_{}_{}_{}.xlsx'.format('bordereau', b.type_paiement,
                                                                                             b.num_paiement, b.num_bordereau,
