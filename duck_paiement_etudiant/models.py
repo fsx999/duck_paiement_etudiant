@@ -353,6 +353,7 @@ class PaiementBackoffice(models.Model):
         mail.attach(filename='regularisation.pdf', content=pdf_file)
         mail.send()
 
+
 @receiver(post_save, sender=PaiementBackoffice)
 def update_total_and_reste(sender, **kwargs):
     instance = kwargs.get('instance', None)
@@ -362,7 +363,6 @@ def update_total_and_reste(sender, **kwargs):
     ct.total = etape_paiement.get_total()
     ct.reste = etape_paiement.get_reste()
     ct.save()
-
 
 
 class PaiementAuditeurBackoffice(models.Model):
