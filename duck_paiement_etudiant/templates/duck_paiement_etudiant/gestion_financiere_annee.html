@@ -15,7 +15,8 @@
         {% for year in years %}
 
         <tr>
-                <td><a class="btn btn-primary" href="{% url 'xadmin:duck_paiement_etudiant_insadmetppaiement_changelist' year=year.cod_anu %}">Paiements : {{ year }}</a></td>
+                <td><a class="btn btn-primary" href="{% url 'xadmin:duck_paiement_etudiant_insadmetppaiement_changelist' year=year.cod_anu %}">Paiements : {{ year }}</a>
+                <a class="btn btn-primary" href="{% url 'xadmin:foad_auditeurlibreapogee_changelist' year=year.cod_anu %}">Paiements Auditeur : {{ year }}</a></td>
             <td><a class="btn btn-primary" href="{% url 'xadmin:impression_bordereau_annee' year.cod_anu %}">Impression des bordereaux pour l'année {{ year }}</a></td>
             <td><a class="btn btn-primary" href="{% url 'xadmin:duck_paiement_etudiant_bordereau_changelist' year=year.cod_anu %}">Bordereaux : {{ year }}</a></td>
             <td><a class="btn btn-primary" href="{% url 'xadmin:statistiques_bordereau_annee' year.cod_anu %}">Statistiques : {{ year }}</a></td>

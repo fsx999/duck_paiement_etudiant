@@ -11,12 +11,13 @@ import openpyxl.styles.colors
 from openpyxl.writer.excel import save_virtual_workbook
 from wkhtmltopdf.views import PDFTemplateView
 from duck_paiement_etudiant.forms import PaiementBackofficeForm
+from foad.models import AuditeurLibreApogee
 from xadmin.layout import Layout, Fieldset, Container, Col
 from django.forms import Media
 from django.views.decorators.cache import never_cache
 from django_apogee.models import InsAdmEtp
 from duck_paiement_etudiant.models import AnneeUniPaiement, PaiementBackoffice, Banque, Bordereau, SettingEtapePaiement, \
-    InsAdmEtpPaiement
+    InsAdmEtpPaiement, PaiementAuditeurBackoffice
 from xadmin.views import filter_hook, BaseAdminView
 from xadmin.filters import NumberFieldListFilter
 
@@ -179,10 +180,14 @@ class ImpressionBordereauAnnee(views.Dashboard):
         data['B'] = {'title': 'Chèque de banque', 'is_active': False}
         data['E'] = {'title': 'Chèque étranger', 'is_active': False}
         data['V'] = {'title': 'Virement', 'is_active': False}
+        data['A'] = {'title': 'Auditeur', 'is_active': False}
         data[type_bordereau]['is_active'] = True
         context['data'] = data
         context['year'] = self.kwargs.get('year', 2014)
-        context['bordereaux'] = Bordereau.objects.by_year(context['year']).filter(type_paiement=type_bordereau)
+        if type_bordereau != 'A':
+            context['bordereaux'] = Bordereau.objects.by_year(context['year']).filter(type_paiement=type_bordereau)
+        else:
+            context['bordereaux'] = Bordereau.auditeur.by_year(context['year']).all()
         return context
 
     @filter_hook
@@ -279,7 +284,12 @@ class ImpressionBordereau(BaseAdminView):
 
         row = 7
         start = 1
-        for paiement in bordereau.paiementbackoffice_set.all().distinct().order_by('id'):
+        if bordereau.type_bordereau == 'N':
+            queryset = bordereau.paiementbackoffice_set.all().distinct().order_by('id')
+        else:  # 'A'
+            queryset = bordereau.paiementauditeurbackoffice_set.all().distinct().order_by('id')
+
+        for paiement in queryset:
             cell = ws.cell(row=row, column=1)
             cell.value = start
             cell.style = Style(font=arial_bold_font,
@@ -373,7 +383,11 @@ class ImpressionBordereau(BaseAdminView):
                            border=thin_border,
                            alignment=left_alignment,)
         cell = ws.cell(row=row+1, column=7)
-        cell.value = bordereau.all_valid().aggregate(Sum('somme'))['somme__sum']
+        if bordereau.type_bordereau == 'N':
+            cell.value = bordereau.all_valid().aggregate(Sum('somme'))['somme__sum']
+        else:
+            cell.value = bordereau.paiementauditeurbackoffice_set.aggregate(Sum('somme'))['somme__sum']
+
         cell.style = Style(font=arial_bold_font,
                            border=thin_border,
                            alignment=right_alignment,)
@@ -392,7 +406,7 @@ class ImpressionBordereau(BaseAdminView):
         return wb
 
     def get(self, request, *args, **kwargs):
-        b = Bordereau.objects.get(pk=kwargs['bordereau'])
+        b = Bordereau.unfiltered.get(pk=kwargs['bordereau'])
         response = HttpResponse(save_virtual_workbook(self.create_spreadsheet(b)), content_type='application/vnd.ms-excel')
         date = datetime.datetime.today().strftime('%d-%m-%Y')
         response['Content-Disposition'] = 'attachment; filename={}_{}_{}_{}_{}.xlsx'.format('bordereau', b.type_paiement,
@@ -412,15 +426,18 @@ class BordereauSpreadsheetView(PDFTemplateView):
     }
 
     def get_filename(self):
-        b = Bordereau.objects.get(pk=self.kwargs['bordereau'])
+        b = Bordereau.unfiltered.get(pk=self.kwargs['bordereau'])
         return self.filename.format(b.type_paiement, b.num_paiement, b.num_bordereau,
                                     datetime.datetime.today().strftime('%d-%m-%Y'))
 
     def get_context_data(self, **kwargs):
-        b = Bordereau.objects.get(pk=self.kwargs['bordereau'])
+        b = Bordereau.unfiltered.get(pk=self.kwargs['bordereau'])
         context = super(BordereauSpreadsheetView, self).get_context_data(**kwargs)
         context['bordereau'] = b
-        context['total_sum'] = b.all_valid().order_by('-id').aggregate(Sum('somme'))['somme__sum']
+        if b.type_bordereau == 'N':
+            context['total_sum'] = b.all_valid().order_by('-id').aggregate(Sum('somme'))['somme__sum']
+        else:
+            context['total_sum'] = b.paiementauditeurbackoffice_set.aggregate(Sum('somme'))['somme__sum']
         return context
 
 
@@ -544,7 +561,7 @@ class BordereauAdmin(object):
                        'get_total_sum', 'get_nb_cheque_total')
     hidden_menu = True
     list_display = ('__str__', 'num_paiement', 'type_paiement', 'date_cloture', 'cloture',  'comment')
-    list_filter = ('type_paiement', ('num_paiement', MyFilter))
+    list_filter = ('type_paiement', ('num_paiement', MyFilter), 'type_bordereau')
     form_layout = Layout(Container(Col('full',
                 Fieldset(
                     '',
@@ -597,10 +614,88 @@ class BordereauAdmin(object):
     get_nb_cheque_total.allow_tags = True
 
 
+class PaiementAuditeurBackofficeInlineAdmin(object):
+    model = PaiementAuditeurBackoffice
+    exclude = ['cod_anu', 'cod_etp']
+    readonly_fields = ['num_paiement', 'bordereau']
+    extra = 1
+    max_num = 3
+    form = PaiementBackofficeForm
 
+
+class AuditeurLibreApogeeAdmin(object):
+    inlines = [PaiementAuditeurBackofficeInlineAdmin]
+
+    fields = [
+        'get_nom', 'get_prenom',
+        'get_cod_ied', 'get_adresse',
+        'get_tarif']
+
+    readonly_fields = [
+        'get_nom', 'get_prenom',
+        'get_cod_ied', 'get_adresse',
+        'get_tarif']
+
+    search_fields = ['etape__code_ied', 'etape__last_name', 'etape__first_name']
+    hidden_menu = True
+
+    show_bookmarks = False
+    site_title = u'Dossiers financiers auditeur libre'
+    form_layout = Layout(Container(Col('full',
+                Fieldset(
+                    "",
+                    'get_nom', 'get_prenom',
+                    'get_cod_ied', 'get_adresse',
+                    'cod_etp',
+                    'get_tarif'
+                    , css_class="unsort no_title"), horizontal=True, span=12)
+            ))
+    pattern = r'^%s/%s/(?P<year>\d+)/'
+
+    def get_kwargs_url(self, instance=None):
+        return {'year': 2014}
+
+    def queryset(self):
+        return AuditeurLibreApogee.objects.filter(annee__cod_anu=self.kwargs['year'])
+
+    def get_tarif(self, obj):
+        return ''
+
+    @filter_hook
+    def get_breadcrumb(self):
+        breadcrumb = super(AuditeurLibreApogeeAdmin, self).get_breadcrumb()
+        breadcrumb = [breadcrumb[0]] + [{'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'}] + breadcrumb[1:]
+        return breadcrumb
+
+    def get_media(self, *args, **kwargs):
+        media = super(AuditeurLibreApogeeAdmin, self).get_media(*args, **kwargs)
+        m = Media()
+        m.add_js(['paiement_etudiant/js/paiement_etudiant.js'])
+        return media+m
+
+    def get_nom(self, obj):
+        return obj.last_name
+    get_nom.short_description = 'Nom'
+    get_nom.allow_tags = True
+
+    def get_prenom(self, obj):
+        return '{}'.format(obj.first_name)
+    get_prenom.short_description = 'Prenom'
+    get_prenom.allow_tags = True
+
+    def get_cod_ied(self, obj):
+        return '{}'.format(obj.code_ied)
+    get_cod_ied.short_description = 'Code ied'
+    get_cod_ied.allow_tags = True
+
+    def get_adresse(self, obj):
+        return '{}'.format(obj.address)
+    get_adresse.short_description = 'Adresse'
+    get_adresse.allow_tags = True
 
 
 xadmin.site.register(InsAdmEtpPaiement, PaiementAdminView)
 xadmin.site.register(Banque, BanqueAdmin)
 xadmin.site.register(Bordereau, BordereauAdmin)
 xadmin.site.register(SettingEtapePaiement)
+xadmin.site.register(AuditeurLibreApogee, AuditeurLibreApogeeAdmin)
