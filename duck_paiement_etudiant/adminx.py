@@ -29,6 +29,7 @@ import xadmin
 class GestionFinanciereAnnee(views.Dashboard):
     base_template = 'duck_paiement_etudiant/gestion_financiere_annee.html'
     widget_customiz = False
+    site_title = 'Backoffice'
 
     def get_context(self):
         context = super(GestionFinanciereAnnee, self).get_context()
