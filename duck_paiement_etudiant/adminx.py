@@ -637,7 +637,7 @@ class AuditeurLibreApogeeAdmin(object):
         'get_cod_ied', 'get_adresse',
         'get_tarif']
 
-    search_fields = ['etape__code_ied', 'etape__last_name', 'etape__first_name']
+    search_fields = ['code_ied', 'last_name', 'first_name']
     hidden_menu = True
 
     show_bookmarks = False
