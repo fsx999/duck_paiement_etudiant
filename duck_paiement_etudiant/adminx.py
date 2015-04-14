@@ -25,6 +25,28 @@ __author__ = 'paulguichon'
 from xadmin import views
 import xadmin
 
+class ExamenDashBoard(views.website.IndexView):
+    widgets = [[{"type": "qbutton",
+                 "title": "Gestion examen",
+                 "btns": [
+                     # {'title': "Gestion des examens à l'etranger", 'url': 'xadmin:duck_examen_etapeexamen_changelist'}, TODO faire la gestion du get
+                     {'title': "Gestion des examens à l'etranger", 'url': '/duck_examen/etapeexamen/?incorporation=0',
+                      'groups': ('examen',)},
+                     {'title': "Gestion des examens aux dom-tom, ... ",
+                      'url': '/duck_examen/etapeexamen/?incorporation=1', 'groups': ('examen', 'domtom')},
+                     {'title': "Gestion des centres", 'url': 'xadmin:duck_examen_examcenter_changelist',
+                      'groups': ('examen', )},
+                     {'title': "Impressions", 'url': 'xadmin:liste_impression_examen', 'groups': ['examen', 'domtom']},
+                     {'title': "Déroulé", 'url': 'xadmin:duck_examen_deroulementexamenmodel_changelist', 'groups': ['examen', 'domtom']},
+                     {'title': "Email centre examen", 'url': 'xadmin:envoi_email_center', 'groups': ('examen', )},
+                     {'title': "Recaps envoi", 'url': 'xadmin:duck_examen_recapitulatifexamenmodel_changelist', 'groups': ['examen']},
+                     ]},
+               ]]
+    site_title = 'Backoffice'
+    title = 'Accueil'
+    widget_customiz = False
+xadmin.site.register_view(r'^examen/$', ExamenDashBoard, 'examen')
+
 
 class GestionFinanciereAnnee(views.Dashboard):
     base_template = 'duck_paiement_etudiant/gestion_financiere_annee.html'
