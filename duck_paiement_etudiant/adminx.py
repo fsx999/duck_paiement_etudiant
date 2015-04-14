@@ -490,7 +490,7 @@ class PaiementAdminView(object):
         return {'year': 2014}
 
     def queryset(self):
-        return InsAdmEtpPaiement.objects.filter(cod_anu=self.kwargs['year'], cod_cge='IED', tem_iae_prm='O')
+        return InsAdmEtpPaiement.objects.filter(cod_anu=self.kwargs['year'], cod_cge='IED')
 
     # def get_tarif(self, obj):
     #     print obj.get_tarif()
