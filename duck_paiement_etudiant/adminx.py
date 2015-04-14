@@ -159,13 +159,15 @@ class StatistiquesBordereau(views.Dashboard):
     def get_breadcrumb(self):
         return [{'url': self.get_admin_url('index'), 'title': 'Accueil'},
                 {'url': self.get_admin_url('gestion_financiere_annee'), 'title': 'Gestion financière'},
-                {'url': self.get_admin_url('statistiques_bordereau_annee', year=self.kwargs['year']), 'title': 'Statistiques'}]
+                {'url': self.get_admin_url('statistiques_bordereau_annee', year=self.kwargs['year']),
+                 'title': 'Statistiques'}]
 
     @never_cache
     def get(self, request, *args, **kwargs):
         self.widgets = self.get_widgets()
         return self.template_response(self.base_template, self.get_context())
-xadmin.site.register_view(r'^statistiques_bordereau/(?P<year>\d+)$', StatistiquesBordereau, 'statistiques_bordereau_annee')
+xadmin.site.register_view(r'^statistiques_bordereau/(?P<year>\d+)$', StatistiquesBordereau,
+                          'statistiques_bordereau_annee')
 
 
 class ImpressionBordereauAnnee(views.Dashboard):
