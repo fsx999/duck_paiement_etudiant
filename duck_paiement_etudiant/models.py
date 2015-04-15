@@ -189,27 +189,52 @@ class Bordereau(models.Model):
         }
         template = Mail.objects.get(name='cloture_bordereau')
         idx = 0
-        for p in self.paiementbackoffice_set.all():
-            context.update({'nom_banque': p.nom_banque.nom,
-                            'nom': p.etape.nom(),
-                            'prenom': p.etape.prenom(),
-                            'num_cheque': p.num_cheque,
-                            'num_etu': p.etape.cod_ind.cod_etu,
-                            'montant': p.somme,
-                            'code_diplome': p.etape.cod_dip, })
-            recipients = get_recipients(p.cod_ind, p.cod_anu.cod_anu)
+        if self.type_bordereau == 'N':
+            for p in self.paiementbackoffice_set.all():
+                context.update({'nom_banque': p.nom_banque.nom,
+                                'nom': p.etape.nom(),
+                                'prenom': p.etape.prenom(),
+                                'num_cheque': p.num_cheque,
+                                'num_etu': p.etape.cod_ind.cod_etu,
+                                'montant': p.somme,
+                                'code_diplome': p.etape.cod_dip, })
+                recipients = get_recipients(p.cod_ind, p.cod_anu.cod_anu)
 
-            mail = template.make_message(recipients=recipients,
-                                         context=context)
-            if not idx % 100:  # we make a pause every 100 mails
-                time.sleep(1)
+                mail = template.make_message(recipients=recipients,
+                                             context=context)
+                if not idx % 100:  # we make a pause every 100 mails
+                    time.sleep(1)
 
-            mail.send()
-            if settings.DEBUG:
-                # send only one mail in debug
-                break
+                mail.send()
+                if settings.DEBUG:
+                    # send only one mail in debug
+                    break
 
-            idx += 1
+                idx += 1
+        else:
+            for p in self.paiementauditeurbackoffice_set.all():
+                context.update({
+                    'nom_banque':  p.nom_banque.nom,
+                    'nom': p.etape.nom(),
+                    'prenom': p.etape.prenom(),
+                    'num_cheque': p.num_cheque,
+                    'num_etu': p.etape.cod_etu(),
+                    'montant': p.somme,
+                    'code_diplome': 'L1NPSY',
+                })
+                recipients = get_recipients(p.cod_ind, p.cod_anu.cod_anu)
+
+                mail = template.make_message(recipients=recipients,
+                                             context=context)
+                if not idx % 100:  # we make a pause every 100 mails
+                    time.sleep(1)
+
+                mail.send()
+                if settings.DEBUG:
+                    # send only one mail in debug
+                    break
+
+                idx += 1
 
     def total_sum(self):
         """
