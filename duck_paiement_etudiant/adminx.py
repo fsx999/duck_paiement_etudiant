@@ -25,6 +25,7 @@ __author__ = 'paulguichon'
 from xadmin import views
 import xadmin
 
+
 class ExamenDashBoard(views.website.IndexView):
     widgets = [[{"type": "qbutton",
                  "title": "Gestion examen",
@@ -561,7 +562,6 @@ class PaiementAdminView(object):
         return '{}'.format(obj.annulation())
     get_eta_iae.short_description = 'Etat de l\'inscription administrative'
     get_eta_iae.allow_tags = True
-
 
 
 class BanqueAdmin(object):

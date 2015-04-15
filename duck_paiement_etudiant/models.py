@@ -139,7 +139,8 @@ class Bordereau(models.Model):
     annee = models.ForeignKey(AnneeUniPaiement)
     date_cloture = models.DateField(u"Date de cloture du bordereau", blank=True, null=True)
     envoi_mail = models.BooleanField(u"envoie mail", default=False)
-    objects = BordereauManager()
+    objects = models.Manager()
+    normal = BordereauManager()
     auditeur = BordereauAuditeurManager()
     unfiltered = models.Manager()
     type_paiement = models.CharField('type de paiement du bordereau',
