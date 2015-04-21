@@ -224,12 +224,12 @@ class Bordereau(models.Model):
                 # recipients = get_recipients(p.etape.cod_ind, p.cod_anu.cod_anu)
                 recipients = (p.etape.cod_etu()+'@foad.iedparis8.net',)
 
-                mail = template.make_message(recipients=recipients,
-                                             context=context)
+                # mail = template.make_message(recipients=recipients,
+                #                              context=context)
                 if not idx % 100:  # we make a pause every 100 mails
                     time.sleep(1)
 
-                mail.send()
+                # mail.send()
                 if settings.DEBUG:
                     # send only one mail in debug
                     break
