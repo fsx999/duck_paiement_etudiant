@@ -222,7 +222,7 @@ class Bordereau(models.Model):
                     'code_diplome': 'L1NPSY',
                 })
                 # recipients = get_recipients(p.etape.cod_ind, p.cod_anu.cod_anu)
-                recipients = (p.etape.cod_etu()+'@foad.iedparis8.net',)
+                # recipients = (p.etape.cod_etu()+'@foad.iedparis8.net',)
 
                 # mail = template.make_message(recipients=recipients,
                 #                              context=context)
