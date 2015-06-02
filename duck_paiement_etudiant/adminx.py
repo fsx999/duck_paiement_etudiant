@@ -472,7 +472,7 @@ class PaiementInlineView(object):
     exclude = ['cod_anu', 'cod_ind', 'cod_etp', 'cod_vrs_vet', 'num_occ_iae']
     readonly_fields = ['num_paiement', 'bordereau']
     extra = 1
-    max_num = 3
+    max_num = 4
     form = PaiementBackofficeForm
 
 
