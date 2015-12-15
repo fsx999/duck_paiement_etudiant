@@ -209,11 +209,14 @@ def add_missing_ins():
     '''
     inscriptions = get_inscriptions(False, 'etudiants.pickle')
     etu_to_etudiant = get_etudiants(inscriptions)
-    for key, value in etu_to_etudiant.items():
-        for x in value.inscriptions:
-            PaiementParInscription.objects.get_or_create(cod_etp=x.cod_etp, cod_anu=2015, cod_vrs_vet=x.cod_vrs_vet,
-                                                         num_occ_iae=x.num_occ_iae,
-                                                         cod_ind=x.cod_ind__cod_ind)
+    for cod_etu, etu in etu_to_etudiant.items():
+        for ins in etu.inscriptions:
+            defaults = {'cod_etu': cod_etu}
+            inscription = PaiementParInscription.objects.update_or_create(
+                cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
+                cod_ind=ins.cod_ind__cod_ind, defaults=defaults
+            )
+
     return etu_to_etudiant
 
 
@@ -235,16 +238,16 @@ class Command(BaseCommand):
             'wishes__etape'
         ).distinct()
 
-        add_missing_ins()
+        etu_to_etudiant = add_missing_ins()
 
-        PaiementParInscription.objects.filter(wish__isnull=True)
-        return None
+        ins_to_wish = PaiementParInscription.objects.filter(wish__isnull=True)
         print 'Individus: {}'.format(individus.count())
-        print 'Inscriptions: {}'.format(len(inscriptions))
-        print 'Etudiants: {}'.format(len(etu_to_etudiant))
-
+        print 'Inscriptions: {}'.format(ins_to_wish.count())
         etu_double_cursus = sum(len(x.inscriptions) > 1 for x in etu_to_etudiant.values())
-        print 'Etudiants double cursus: {}'.format(etu_double_cursus)
+        print 'Double cursus: {}'.format(etu_double_cursus)
+        return None
+
+
         for cod_etu, etu in etu_to_etudiant.items():
             if len(etu.inscriptions) > 1:
                 ins_list = [ins.cod_etp for ins in etu.inscriptions]
