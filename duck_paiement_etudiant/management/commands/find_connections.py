@@ -128,14 +128,14 @@ def is_same_person(i, e):
         return False
 
 
-def give_options(options_count):
-    print 'Choose between 1 and {}'.format(options_count)
+def give_options(start, end):
+    print 'Choose between {} and {}'.format(start, end)
     while True:
         choice = int(raw_input())
-        if 1 <= choice <= options_count :
+        if start <= choice <= end:
             return choice
         else:
-            print 'Please give a number between 1 and {}'.format(options_count)
+            print 'Please give a number between {} and {}'.format(start, end)
 
 def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs):
     '''
@@ -197,12 +197,13 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs)
                 if count_different_ind == 0:
                     choice = 0
                     if len(ind_found) > 1:
+                        break
                         # Ask me which I want to choose
                         print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'\
                             .format(ins.cod_ind__cod_ind)
                         for i, ind in enumerate(ind_found):
                             print '{}. https://backoffice.iedparis8.net/duck_inscription/individu/{}/update/'.format(i+1, ind.id)
-                        choice = give_options(len(ind_found)) - 1
+                        choice = give_options(1, len(ind_found)) - 1
 
                     # Individu.objects.get(code_opi=individus[0].code_opi)
                     defaults = {'individu': ind_found[choice]}
@@ -210,10 +211,52 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs)
                         cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
                         cod_ind=ins.cod_ind__cod_ind, defaults=defaults
                     )
+                    print 'Saved successfully'
 
                 else:
-                    # Ask me if I wish to change the name, surname, date de naissance
-                    pass
+                    if len(ind_found) == 1:
+                        break
+                        # Ask me if I wish to change the name, surname, date de naissance
+                        print 'Are they the same? \n0. False 1. True'
+                        print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'\
+                            .format(ins.cod_ind__cod_ind)
+                        print 'https://backoffice.iedparis8.net/duck_inscription/individu/{}/update/'.format(ind_found[0].id)
+                        choice = give_options(0, len(ind_found))
+
+                        if choice == 1:
+                            defaults = {'individu': ind_found[0]}
+                            PaiementParInscription.objects.update_or_create(
+                                cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
+                                cod_ind=ins.cod_ind__cod_ind, defaults=defaults
+                            )
+                            print 'Saved successfully'
+
+
+def find_correspondance_to_wish(wish_not_found):
+    for ins in wish_not_found:
+        ind = ins.individu
+        wishes = []
+        for wish in ind.wishes.all():
+            if str(wish.etape.cod_etp)[2:] == str(ins.cod_etp)[2:]:
+                wishes.append(wish)
+
+        if wishes:
+            choice = 0
+            if len(wishes) > 1:
+                print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'.format(ins.cod_ind)
+                print 'https://backoffice.iedparis8.net/duck_inscription/individu/{}/update/'.format(ind.id)
+                for i, wish in enumerate(wishes):
+                    print '{}. {}'.format(i+1, wish)
+                choice = give_options(1, len(wishes)) - 1
+                print 'Saved successfully'
+
+            defaults = {'wish': wishes[choice]}
+            PaiementParInscription.objects.update_or_create(
+                cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
+                cod_ind=ins.cod_ind, defaults=defaults
+            )
+
+
 
 
 def to_dict(obj):
@@ -302,48 +345,21 @@ class Command(BaseCommand):
         # print nombre_not_found
         print 'Etudiants found {}'.format(etudiants_found)
         print 'Etudiants not found {}'.format(etudiants_not_found)
-        return None
 
         # Correspond wishes to inscriptions
-        for cod_etu, etu in etu_to_etudiant.items():
-            for ins in etu.inscriptions:
-                for ind in etu.individus:
-                    for wish in ind.wishes.all():
-                        ins.append_wish(wish)
+        wish_not_found = PaiementParInscription.objects.select_related('individu')\
+            .filter(individu__isnull=False, wish__isnull=True)
 
-        for cod_etu, etu in etu_to_etudiant.items():
-            for ins in etu.inscriptions:
-                if etu.individus and not ins.wishes:
-                    print 'No wish: {} {}'.format(cod_etu, ins.cod_etp)
-                elif not etu.individus:
-                    print 'No ind: {} {} {} {}'.format(cod_etu, ins.cod_etp, ins.last_name, ins.first_name1)
+        wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
 
-        # for i in range(0,10):
-        #     for ins in etu_ins_to_wishes.values()[i]:
-        #         print ins
+        find_correspondance_to_wish(wish_not_found)
 
-        same = 0
-        similar = 0
-        both = 0
-        multiple_wishes = 0
-        for etu in etu_to_etudiant.values():
-            for ins in etu.inscriptions:
-                if etu.individus:
-                    if len(ins.wishes) > 1:
-                        multiple_wishes += 1
-                    w_same = sum(1 for i in ins.wishes_is_same() if i[1] == True)
-                    if not w_same:
-                        similar += 1
-                    elif w_same == len(ins.wishes):
-                        same += 1
-                    else:
-                        both += 1
+        wish_not_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=True)
 
-        print 'Same wishes found {}'.format(same)
-        print 'Similar wishes found {}'.format(similar)
-        print 'Both same and similar {}'.format(both)
-        print 'Multiple wishes {}'.format(multiple_wishes)
-        print 'All {}'.format(same+similar+both)
+        print 'Wish found {}'.format(wish_found.count())
+        print 'Wish not found {}'.format(wish_not_found.count())
+        return None
+
 
         # Find payments by CB
         wish_cb = {}
