@@ -342,7 +342,7 @@ class Command(BaseCommand):
         # pprint(vars(o))
         # return
 
-        # find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, manual=tested_by_hand)
+        find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, manual=tested_by_hand)
 
         etudiants_not_found = PaiementParInscription.objects.filter(individu__isnull=True).count()
         etudiants_found = PaiementParInscription.objects.filter(individu__isnull=False).count()
