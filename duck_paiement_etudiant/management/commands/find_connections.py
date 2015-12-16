@@ -300,11 +300,7 @@ def add_missing_ins(etu_to_etudiant):
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        try:
-            etudiant_delete = PaiementParInscription.objects.get(cod_etu=15607332).delete()
-            print 'ETU deleted'
-        except:
-            pass
+
         tested_by_hand = {
             '15609653': 7721112, #MEZIOUT BRAHIMI MALIKA, nom prenom inversees
             '14511097': 7718634, #PEDRONO ANNE-CLAIRE, same ine by mistake
