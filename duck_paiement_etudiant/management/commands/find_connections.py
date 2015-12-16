@@ -215,7 +215,6 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs)
 
                 else:
                     if len(ind_found) == 1:
-                        break
                         # Ask me if I wish to change the name, surname, date de naissance
                         print 'Are they the same? \n0. False 1. True'
                         print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'\
@@ -243,6 +242,7 @@ def find_correspondance_to_wish(wish_not_found):
         if wishes:
             choice = 0
             if len(wishes) > 1:
+                break
                 print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'.format(ins.cod_ind)
                 print 'https://backoffice.iedparis8.net/duck_inscription/individu/{}/update/'.format(ind.id)
                 for i, wish in enumerate(wishes):
@@ -300,6 +300,11 @@ def add_missing_ins(etu_to_etudiant):
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+        try:
+            etudiant_delete = PaiementParInscription.objects.get(cod_etu=15607332).delete()
+            print 'ETU deleted'
+        except:
+            pass
         tested_by_hand = {
             '15609653': 7721112, #MEZIOUT BRAHIMI MALIKA, nom prenom inversees
             '14511097': 7718634, #PEDRONO ANNE-CLAIRE, same ine by mistake
@@ -337,7 +342,7 @@ class Command(BaseCommand):
         # pprint(vars(o))
         # return
 
-        find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, manual=tested_by_hand)
+        # find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, manual=tested_by_hand)
 
         etudiants_not_found = PaiementParInscription.objects.filter(individu__isnull=True).count()
         etudiants_found = PaiementParInscription.objects.filter(individu__isnull=False).count()
