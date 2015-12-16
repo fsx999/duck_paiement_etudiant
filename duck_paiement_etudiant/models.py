@@ -10,7 +10,7 @@ from django.dispatch import receiver
 from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.utils.encoding import python_2_unicode_compatible
-from duck_inscription.models import Wish
+from duck_inscription.models import Wish, Individu as Individu2
 from mailrobot.models import MailBody, Mail
 from duck_utils.utils import email_ied, get_recipients
 from foad.models import AuditeurLibreApogee
@@ -466,15 +466,16 @@ class PaiementParInscription(models.Model):
     and the wish to which this inscription corresponds, as well as the payment info of what the student has payed
     '''
     # cle primaire composite
-    cod_anu = models.CharField(max_length=4)
-    cod_ind = models.CharField(max_length=10)
+    cod_anu = models.CharField(max_length=4, null=True)
+    cod_ind = models.CharField(max_length=10, null=True)
     cod_etp = models.CharField(u"Code Etape", max_length=8, null=True,
                                db_column="COD_ETP")
     cod_vrs_vet = models.CharField(u"(COPIED)Numero Version Etape", max_length=3, db_column="COD_VRS_VET", null=True)
     num_occ_iae = models.CharField(u"", max_length=2, null=True, db_column="NUM_OCC_IAE")
     # fin
     cod_etu = models.CharField(max_length=10)
-    wish = models.ForeignKey(Wish, null=True)
+    individu = models.ForeignKey(Individu2, null=True)
+    wish = models.ForeignKey(Wish, null=True, unique=True)
     montant_paye = models.IntegerField(null=True)
     paiment_type = models.CharField(u"Paiement Type", null=True, max_length=3)
     bordereau = models.IntegerField(null=True)

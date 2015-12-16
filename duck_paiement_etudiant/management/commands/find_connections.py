@@ -128,7 +128,16 @@ def is_same_person(i, e):
         return False
 
 
-def find_correspondance_etu_to_ind(etu_to_etudiant, individus, **kwargs):
+def give_options(options_count):
+    print 'Choose between 1 and {}'.format(options_count)
+    while True:
+        choice = int(raw_input())
+        if 1 <= choice <= options_count :
+            return choice
+        else:
+            print 'Please give a number between 1 and {}'.format(options_count)
+
+def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs):
     '''
     Each student corresponds to a list of individu
     Find which student corresponds at which individu.
@@ -153,32 +162,59 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, **kwargs):
     etu_to_ind = {}
     etudiants_not_found = {}
 
-    for cod_etu, etu in etu_to_etudiant.items():
-        ins = etu.inscriptions[0]
-        ine = ins.get_ine()
-        cod_opi = ins.cod_ind__cod_ind_opi
-        e_nom = ins.cod_ind__lib_nom_pat_ind
-        e_prenom = ins.cod_ind__lib_pr1_ind
+    for cod_etu in no_ind:
+        cod_etu = int(cod_etu['cod_etu'])
+        if cod_etu in etu_to_etudiant:
+            etu = etu_to_etudiant[cod_etu]
+            for ins in etu.inscriptions:
+                ine = ins.get_ine()
+                cod_opi = ins.cod_ind__cod_ind_opi
+                e_nom = ins.cod_ind__lib_nom_pat_ind
+                e_prenom = ins.cod_ind__lib_pr1_ind
+                ind_found = []
 
-        if cod_etu in tested_by_hand:
-            etu.set_individus('manual', [individus_opi[tested_by_hand[cod_etu]]])
-        elif ine and ine in individus_ine:
-            etu.set_individus('ine', individus_ine[ine])
-        elif cod_etu and cod_etu in individus_etu:
-            etu.set_individus('etu', individus_etu[cod_etu])
-        elif cod_etu and cod_opi in individus_opi:
-            etu.set_individus('opi', [individus_opi[cod_opi]])
-        else:
-            e_date = datetime.strptime(str(ins.cod_ind__date_nai_ind), '%Y-%m-%d %H:%M:%S').date()
-            i_found = individus.filter(Q(first_name1__icontains=e_prenom) | Q(last_name__icontains=e_nom))\
-                .filter(birthday=e_date)
-            if i_found.exists():
-                found_list = [individus_opi[i.code_opi] for i in i_found]
-                etu.set_individus('name', found_list)
-            else:
-                etudiants_not_found[cod_etu] = ins
+                if cod_etu in tested_by_hand:
+                    ind_found = [individus_opi[tested_by_hand[cod_etu]]]
+                elif ine and ine in individus_ine:
+                    ind_found =  individus_ine[ine]
+                elif cod_etu and cod_etu in individus_etu:
+                    ind_found = individus_etu[cod_etu]
+                elif cod_etu and cod_opi in individus_opi:
+                    ind_found = [individus_opi[cod_opi]]
+                else:
+                    e_date = datetime.strptime(str(ins.cod_ind__date_nai_ind), '%Y-%m-%d %H:%M:%S').date()
+                    i_found = individus.filter(Q(first_name1__icontains=e_prenom) | Q(last_name__icontains=e_nom))\
+                        .filter(birthday=e_date)
+                    if i_found.exists():
+                        found_list = [individus_opi[i.code_opi] for i in i_found]
+                        ind_found = found_list
+                    else:
+                        etudiants_not_found[cod_etu] = ins
 
-    return etu_to_etudiant
+                if len(ind_found) == 0:
+                    break
+                count_different_ind = sum([1 for ind in ind_found if not is_same_person(ind, ins)])
+                if count_different_ind == 0:
+                    choice = 0
+                    if len(ind_found) > 1:
+                        break
+                        # Ask me which I want to choose
+                        print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'\
+                            .format(ins.cod_ind__cod_ind)
+                        for i, ind in enumerate(ind_found):
+                            print '{}. https://backoffice.iedparis8.net/duck_inscription/individu/{}/update/'.format(i+1, ind.id)
+                        choice = give_options(len(ind_found)) - 1
+
+                    # Individu.objects.get(code_opi=individus[0].code_opi)
+                    defaults = {'individu': ind_found[choice]}
+                    PaiementParInscription.objects.update_or_create(
+                        cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
+                        cod_ind=ins.cod_ind__cod_ind, defaults=defaults
+                    )
+
+                else:
+                    # Ask me if I wish to change the name, surname, date de naissance
+                    pass
 
 
 def to_dict(obj):
@@ -202,13 +238,12 @@ def to_dict(obj):
     return nobj
 
 
-def add_missing_ins():
+def add_missing_ins(etu_to_etudiant):
     '''
     Adds missing inscriptions to the table PaiementParInscription
     :return:
     '''
-    inscriptions = get_inscriptions(False, 'etudiants.pickle')
-    etu_to_etudiant = get_etudiants(inscriptions)
+
     for cod_etu, etu in etu_to_etudiant.items():
         for ins in etu.inscriptions:
             defaults = {'cod_etu': cod_etu}
@@ -238,52 +273,37 @@ class Command(BaseCommand):
             'wishes__etape'
         ).distinct()
 
-        etu_to_etudiant = add_missing_ins()
+        inscriptions = get_inscriptions(True, 'etudiants.pickle')
+        etu_to_etudiant = get_etudiants(inscriptions)
+        # add_missing_ins(etu_to_etudiant)
+        ins_paiement = PaiementParInscription.objects.filter(wish__isnull=True)
 
-        ins_to_wish = PaiementParInscription.objects.filter(wish__isnull=True)
-        print 'Individus: {}'.format(individus.count())
-        print 'Inscriptions: {}'.format(ins_to_wish.count())
         etu_double_cursus = sum(len(x.inscriptions) > 1 for x in etu_to_etudiant.values())
+
+        print 'Individus: {}'.format(individus.count())
+        print 'Inscriptions: {}'.format(ins_paiement.count())
         print 'Double cursus: {}'.format(etu_double_cursus)
-        return None
 
+        no_ind = ins_paiement.filter(individu__isnull=True).values('cod_etu')
 
-        for cod_etu, etu in etu_to_etudiant.items():
-            if len(etu.inscriptions) > 1:
-                ins_list = [ins.cod_etp for ins in etu.inscriptions]
+        # for cod_etu, etu in etu_to_etudiant.items():
+        #     if len(etu.inscriptions) > 1:
+        #         ins_list = [ins.cod_etp for ins in etu.inscriptions]
                 # print '{} {}'.format(cod_etu, ins_list)
 
         # o = individus_etu['12318389'].wishes.all()[0].etape
         # pprint(vars(o))
         # return
 
-        etu_to_etudiant = find_correspondance_etu_to_ind(etu_to_etudiant, individus, manual=tested_by_hand)
+        find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, manual=tested_by_hand)
 
-        etudiants_not_found = sum(1 for e in etu_to_etudiant.values() if not e.individus)
-        etudiants_found = len(etu_to_etudiant) - etudiants_not_found
-
-        count_false_positive = 0
-        count_multi_individus = 0
-        # Verify that corresponding people have the same data
-        for cod_etu, etu in etu_to_etudiant.items():
-            ins = etu.inscriptions[0]
-            false_positive = False
-            ind_count = len(etu.individus)
-            # if ind_count > 1:
-            #     print ind_list
-            for ind in etu.individus:
-                if not is_same_person(ind, ins):
-                    false_positive = True
-                # if ind_count > 1:
-                #     print '{} {}'.format(ind.code_opi, ind)
-            count_multi_individus += 1 if ind_count > 1 else 0
-            count_false_positive += 1 if false_positive else 0
+        etudiants_not_found = PaiementParInscription.objects.filter(individu__isnull=True).count()
+        etudiants_found = PaiementParInscription.objects.filter(individu__isnull=False).count()
 
         # print nombre_not_found
         print 'Etudiants found {}'.format(etudiants_found)
-        print 'False Positive {}'.format(count_false_positive)
         print 'Etudiants not found {}'.format(etudiants_not_found)
-        print 'Etudiants with multiple individus {}'.format(count_multi_individus)
+        return None
 
         # Correspond wishes to inscriptions
         for cod_etu, etu in etu_to_etudiant.items():
