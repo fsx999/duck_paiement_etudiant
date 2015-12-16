@@ -197,7 +197,6 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs)
                 if count_different_ind == 0:
                     choice = 0
                     if len(ind_found) > 1:
-                        break
                         # Ask me which I want to choose
                         print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'\
                             .format(ins.cod_ind__cod_ind)
