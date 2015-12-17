@@ -430,9 +430,16 @@ class Command(BaseCommand):
         for ins in info_cb:
             nom = etu_to_etudiant[int(ins.cod_etu)].inscriptions[0].last_name
             prenom = etu_to_etudiant[int(ins.cod_etu)].inscriptions[0].first_name1
+            num_commande = None
+            if ins.wish:
+                try:
+                    num_commande = ins.wish.paiementallmodel.pk
+                except:
+                    pass
+
             update_paiment_par_ins(ins, {
                 'nom': nom, 'prenom': prenom,
-                'annee': 2015, 'num_commande': ins.wish.paiementallmodel.pk
+                'annee': 2015, 'num_commande': num_commande
             })
 
         print 'Amounts found {}'.format(amounts_found)
