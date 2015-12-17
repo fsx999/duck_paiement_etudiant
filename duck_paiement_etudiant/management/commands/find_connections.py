@@ -315,16 +315,16 @@ def download_payment_info(individus, pickle_file):
 
                         added += 1
 
-                        # print 'Save CB pickle'
-                        # pickle.dump(wish_cb, open(pickle_file, "wb"))
+                        print 'Save CB pickle'
+                        pickle.dump(wish_cb, open(pickle_file, "wb"))
 
                 except PaiementAllModel.DoesNotExist:
                     continue
                 except DuckInscriptionPaymentRequest.DoesNotExist:
                     continue
 
-    print 'Save CB pickle'
-    pickle.dump(wish_cb, open(pickle_file, "wb"))
+    # print 'Save CB pickle'
+    # pickle.dump(wish_cb, open(pickle_file, "wb"))
     return wish_cb
 
 
@@ -418,6 +418,7 @@ class Command(BaseCommand):
                             .format(ins.individu.code_opi, ins.wish.droit_total(), ins.wish.frais_peda(),
                                     theoritical_total, amount_payed)
                     else:
+                        update_paiment_par_ins(ins, {'montant_paye': amount_payed - ins.wish.droit_total()})
                         is_equal += 1
                 elif is_waiting:
                     waiting += 1
