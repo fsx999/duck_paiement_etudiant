@@ -340,7 +340,7 @@ class Command(BaseCommand):
         ).distinct()
 
         # STEP 1: Add inscriptions that are missing from the PaiementParInscription table
-        # etu_to_etudiant = add_missing_ins()
+        etu_to_etudiant = add_missing_ins()
         ins_paiement = PaiementParInscription.objects.filter(wish__isnull=True)
 
         print 'Individus: {}'.format(individus.count())
@@ -358,7 +358,7 @@ class Command(BaseCommand):
 
         # STEP 3: Find correspondance between an inscription and a particular wish of the individu
         wish_not_found = PaiementParInscription.objects.select_related('individu')\
-            .filter(individu__isnull=False, wish__isnull=True)
+            .filter(individu__isnull=False, wish__isnull=True, bordereau__isnull=True)
 
         find_correspondance_to_wish(wish_not_found)
 
@@ -425,6 +425,15 @@ class Command(BaseCommand):
                     waiting += 1
 
                 # print total_amount
+
+        info_cb = PaiementParInscription.objects.filter()
+        for ins in info_cb:
+            nom = etu_to_etudiant[int(ins.cod_etu)].inscriptions[0].last_name
+            prenom = etu_to_etudiant[int(ins.cod_etu)].inscriptions[0].first_name1
+            update_paiment_par_ins(ins, {
+                'nom': nom, 'prenom': prenom,
+                'annee': 2015, 'num_commande': ins.wish.paiementallmodel.pk
+            })
 
         print 'Amounts found {}'.format(amounts_found)
         print 'Equal {}'.format(is_equal)

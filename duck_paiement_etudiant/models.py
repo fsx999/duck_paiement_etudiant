@@ -479,6 +479,10 @@ class PaiementParInscription(models.Model):
     montant_paye = models.FloatField(null=True)
     paiment_type = models.CharField(u"Paiement Type", null=True, max_length=3)
     bordereau = models.IntegerField(null=True)
+    nom = models.CharField(max_length=255, null=True)
+    prenom = models.CharField(max_length=255, null=True)
+    annee = models.IntegerField(null=True)
+    num_commande = models.IntegerField(null=True)
 
 
 
