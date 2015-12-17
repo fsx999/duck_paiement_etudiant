@@ -21,6 +21,7 @@ class Inscription:
         self.first_name1 = kwargs['cod_ind__lib_pr1_ind']
         self.birthday = datetime.strptime(str(kwargs['cod_ind__date_nai_ind']), '%Y-%m-%d %H:%M:%S').date()
         self.cod_etu = kwargs['cod_ind__cod_etu']
+        self.cod_ind = kwargs['cod_ind__cod_ind']
         self.wishes = []
         self.the_wish = None
         self.amount_payed = 0
@@ -197,7 +198,6 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs)
                 if count_different_ind == 0:
                     choice = 0
                     if len(ind_found) > 1:
-                        break
                         # Ask me which I want to choose
                         print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'\
                             .format(ins.cod_ind__cod_ind)
@@ -206,15 +206,12 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs)
                         choice = give_options(1, len(ind_found)) - 1
 
                     # Individu.objects.get(code_opi=individus[0].code_opi)
-                    defaults = {'individu': ind_found[choice]}
-                    PaiementParInscription.objects.update_or_create(
-                        cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
-                        cod_ind=ins.cod_ind__cod_ind, defaults=defaults
-                    )
+                    update_paiment_par_ins(ins, {'individu': ind_found[choice]})
                     print 'Saved successfully'
 
                 else:
                     if len(ind_found) == 1:
+                        break
                         # Ask me if I wish to change the name, surname, date de naissance
                         print 'Are they the same? \n0. False 1. True'
                         print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'\
@@ -223,11 +220,7 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, **kwargs)
                         choice = give_options(0, len(ind_found))
 
                         if choice == 1:
-                            defaults = {'individu': ind_found[0]}
-                            PaiementParInscription.objects.update_or_create(
-                                cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
-                                cod_ind=ins.cod_ind__cod_ind, defaults=defaults
-                            )
+                            update_paiment_par_ins(ins, {'individu': ind_found[0]})
                             print 'Saved successfully'
 
 
@@ -242,7 +235,6 @@ def find_correspondance_to_wish(wish_not_found):
         if wishes:
             choice = 0
             if len(wishes) > 1:
-                break
                 print 'https://backoffice.iedparis8.net/django_apogee/individu/{}/update/'.format(ins.cod_ind)
                 print 'https://backoffice.iedparis8.net/duck_inscription/individu/{}/update/'.format(ind.id)
                 for i, wish in enumerate(wishes):
@@ -250,13 +242,7 @@ def find_correspondance_to_wish(wish_not_found):
                 choice = give_options(1, len(wishes)) - 1
                 print 'Saved successfully'
 
-            defaults = {'wish': wishes[choice]}
-            PaiementParInscription.objects.update_or_create(
-                cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
-                cod_ind=ins.cod_ind, defaults=defaults
-            )
-
-
+            update_paiment_par_ins(ins, {'wish': wishes[choice]})
 
 
 def to_dict(obj):
@@ -280,34 +266,68 @@ def to_dict(obj):
     return nobj
 
 
-def add_missing_ins(etu_to_etudiant):
+def add_missing_ins():
     '''
     Adds missing inscriptions to the table PaiementParInscription
     :return:
     '''
-
+    inscriptions = get_inscriptions(True, 'etudiants.pickle')
+    etu_to_etudiant = get_etudiants(inscriptions)
     for cod_etu, etu in etu_to_etudiant.items():
         for ins in etu.inscriptions:
-            defaults = {'cod_etu': cod_etu}
-            inscription = PaiementParInscription.objects.update_or_create(
-                cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
-                cod_ind=ins.cod_ind__cod_ind, defaults=defaults
-            )
+            update_paiment_par_ins(ins, {'cod_etu': cod_etu})
+
+    etu_double_cursus = sum(len(x.inscriptions) > 1 for x in etu_to_etudiant.values())
+    print 'Double cursus: {}'.format(etu_double_cursus)
 
     return etu_to_etudiant
+
+
+def update_paiment_par_ins(ins, defaults):
+    inscription = PaiementParInscription.objects.update_or_create(
+        cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
+        cod_ind=ins.cod_ind, defaults=defaults
+    )
+    return inscription
+
+
+def download_payment_info(individus, pickle_file):
+    wish_cb = {}
+    if os.path.isfile(pickle_file):
+        wish_cb = pickle.load(open(pickle_file, "rb"))
+
+    added = 0
+    for ind in individus:
+        for wish in ind.wishes.all():
+            dossier = int(wish.code_dossier)
+            if dossier not in wish_cb:
+                try:
+                    # print '{}: {}'.format(i, ind)
+                    paiement = wish.paiementallmodel
+                    moyen = paiement.moyen_paiement
+                    if moyen and moyen.type == 'CB':
+                        request = paiement.paiement_request
+                        status = dict(request.status_paiement())
+                        # print status
+                        wish_cb[dossier] = to_dict(status)
+                        # print type(status)
+                        # print to_dict(status)
+
+                        added += 1
+                        print 'Save CB pickle'
+                        pickle.dump(wish_cb, open(pickle_file, "wb"))
+
+                except PaiementAllModel.DoesNotExist:
+                    continue
+                except DuckInscriptionPaymentRequest.DoesNotExist:
+                    continue
+
+    return wish_cb
 
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-
-        tested_by_hand = {
-            '15609653': 7721112, #MEZIOUT BRAHIMI MALIKA, nom prenom inversees
-            '14511097': 7718634, #PEDRONO ANNE-CLAIRE, same ine by mistake
-            '11299481': 7722497, #PAPAGEORGIOU STYLIANI MARIA, wrong name, and surname by mistake
-        }
-
-        opi_wrong_birthday = ['15608970', '11296888', '12320445', '15609868', '10277022', '12320380']
 
         individus = Individu.objects.all().filter(wishes__isnull=False).prefetch_related(
             'wishes__paiementallmodel',
@@ -316,236 +336,94 @@ class Command(BaseCommand):
             'wishes__etape'
         ).distinct()
 
-        inscriptions = get_inscriptions(True, 'etudiants.pickle')
-        etu_to_etudiant = get_etudiants(inscriptions)
-        # add_missing_ins(etu_to_etudiant)
+        # STEP 1: Add inscriptions that are missing from the PaiementParInscription table
+        # etu_to_etudiant = add_missing_ins()
         ins_paiement = PaiementParInscription.objects.filter(wish__isnull=True)
-
-        etu_double_cursus = sum(len(x.inscriptions) > 1 for x in etu_to_etudiant.values())
 
         print 'Individus: {}'.format(individus.count())
         print 'Inscriptions: {}'.format(ins_paiement.count())
-        print 'Double cursus: {}'.format(etu_double_cursus)
 
         no_ind = ins_paiement.filter(individu__isnull=True).values('cod_etu')
 
-        # for cod_etu, etu in etu_to_etudiant.items():
-        #     if len(etu.inscriptions) > 1:
-        #         ins_list = [ins.cod_etp for ins in etu.inscriptions]
-                # print '{} {}'.format(cod_etu, ins_list)
-
-        # o = individus_etu['12318389'].wishes.all()[0].etape
-        # pprint(vars(o))
-        # return
-
-        find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind, manual=tested_by_hand)
+        # STEP 2: Find correspondance between an inscription and an individu
+        # find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind)
 
         etudiants_not_found = PaiementParInscription.objects.filter(individu__isnull=True).count()
         etudiants_found = PaiementParInscription.objects.filter(individu__isnull=False).count()
-
-        # print nombre_not_found
         print 'Etudiants found {}'.format(etudiants_found)
         print 'Etudiants not found {}'.format(etudiants_not_found)
 
-        # Correspond wishes to inscriptions
+        # STEP 3: Find correspondance between an inscription and a particular wish of the individu
         wish_not_found = PaiementParInscription.objects.select_related('individu')\
             .filter(individu__isnull=False, wish__isnull=True)
 
-        wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
-
         find_correspondance_to_wish(wish_not_found)
 
+        wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
         wish_not_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=True)
-
         print 'Wish found {}'.format(wish_found.count())
         print 'Wish not found {}'.format(wish_not_found.count())
-        return None
 
-
-        # Find payments by CB
-        wish_cb = {}
-        pickle_file = 'info_cb.pickle'
-        if os.path.isfile(pickle_file):
-            wish_cb = pickle.load(open(pickle_file, "rb"))
-
-        added = 0
-        for i, ind in enumerate(individus):
-            for wish in ind.wishes.all():
-                dossier = int(wish.code_dossier)
-                if dossier not in wish_cb:
-                    try:
-                        # print '{}: {}'.format(i, ind)
-                        paiement = wish.paiementallmodel
-                        moyen = paiement.moyen_paiement
-                        if moyen and moyen.type == 'CB':
-                            request = paiement.paiement_request
-                            status = dict(request.status_paiement())
-                            # print status
-                            wish_cb[dossier] = to_dict(status)
-                            # print type(status)
-                            # print to_dict(status)
-
-                            added += 1
-                            print 'Save CB pickle'
-                            pickle.dump(wish_cb, open(pickle_file, "wb"))
-
-                    except PaiementAllModel.DoesNotExist:
-                        continue
-                    except DuckInscriptionPaymentRequest.DoesNotExist:
-                        continue
-
-        print 'Total wishes with cb selected: {}'.format(len(wish_cb))
+        # STEP 4: Download all payment info and save them in a pickle
+        wish_cb = download_payment_info(individus, 'info_cb.pickle')
 
         wish_payed_cb = {}
         for code_dossier, info_cb in wish_cb.items():
             if info_cb['commonResponse']['responseCode'] == 0:
                 wish_payed_cb[code_dossier] = info_cb
 
+        print 'Total wishes with cb: {}'.format(len(wish_cb))
         print 'Total wishes payed with cb: {}'.format(len(wish_payed_cb))
 
-        etu_all_wishes_cb = 0
-        etu_correct_wishes_cb = 0
-        for cod_etu, etu in etu_to_etudiant.items():
-            all_found = 0
-            correct_found = 0
-            for ind in etu.individus:
-                for w in ind.wishes.all():
-                    if int(w.code_dossier) in wish_payed_cb:
-                        etu_all_wishes_cb += 1
-                        all_found += 1
-            for ins in etu.inscriptions:
-                for w in ins.wishes:
-                    if int(w.code_dossier) in wish_payed_cb:
-                        etu_correct_wishes_cb += 1
-                        correct_found += 1
+        # STEP 5: Associate students with the amount they payed by CB
 
-            if all_found != correct_found:
-                ins = etu.inscriptions[0]
-                print '{}, {} {}'.format(cod_etu, ins.last_name, ins.first_name1)
+        wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
 
-        print 'Etudiants All Carte Bancaire: {}'.format(etu_all_wishes_cb)
-        print 'Etudiants Correct Carte Bancaire: {}'.format(etu_correct_wishes_cb)
-
-        for ins in etu_to_etudiant[11297879].inscriptions:
-            for w in ins.wishes:
-                if int(w.code_dossier) in wish_cb:
-                    print wish_cb[int(w.code_dossier)]
-        for ind in etu_to_etudiant[11297879].individus:
-            for wish in ind.wishes.all():
-                dossier = int(wish.code_dossier)
-                # print '{}: {}'.format(i, ind)
-                paiement = wish.paiementallmodel
-                moyen = paiement.moyen_paiement
-                if moyen and moyen.type == 'CB':
-                    request = paiement.paiement_request
-                    status = dict(request.status_paiement())
-                    print status
-
-        multiple_wishes = 0
-        multiple_wishes_cb = 0
-        too_many_wishes_cb = 0
-        for cod_etu, etu in etu_to_etudiant.items():
-            for ins in etu.inscriptions:
-                if etu.individus and len(ins.wishes) > 1:
-                    multiple_wishes += 1
-                    wish_found = 0
-                    for wish in ins.wishes:
-                        if int(wish.code_dossier) in wish_payed_cb:
-                            ins.the_wish = wish
-                            wish_found += 1
-                    if wish_found > 0:
-                        multiple_wishes_cb += 1
-                        if wish_found > 1:
-                            ins.the_wish = None
-                            print '{} {}'.format(cod_etu, etu.individus)
-                            too_many_wishes_cb += 1
-                elif ins.wishes:
-                    ins.the_wish = ins.wishes[0]
-
-        print 'Multiple wishes {}'.format(multiple_wishes)
-        print 'Multiple wishes, one payed by CB {}'.format(multiple_wishes_cb)
-        print 'Multiple wishes, many payed by CB {}'.format(too_many_wishes_cb)
-
-        the_wish_found = 0
         amounts_found = 0
-        positive_amounts_found = 0
-        for cod_etu, etu in etu_to_etudiant.items():
-            for ins in etu.inscriptions:
-                if ins.the_wish:
-                    the_wish_found += 1
-                    code_dossier = int(ins.the_wish.code_dossier)
-                    if code_dossier in wish_payed_cb:
-                        amounts_found += 1
-                        request = wish_payed_cb[code_dossier]
-                        total_amount = 0
-                        for i in request['transactionItem']:
-                            if i['transactionStatusLabel'] == 'CAPTURED':
-                                total_amount += int(i['amount'])
-                            elif i['transactionStatusLabel'] in ['WAITING_AUTHORISATION', 'AUTHORISED']:
-                                ins.waiting = True
-                            elif i['transactionStatusLabel'] not in ['REFUSED', 'CANCELLED']:
-                                print i['transactionStatusLabel']
-                        ins.amount_payed = total_amount
-                        if total_amount > 0:
-                            positive_amounts_found += 1
-                        # print total_amount
-
-        print 'The wish found {}'.format(the_wish_found)
-        print 'Amounts found {}'.format(amounts_found)
-        print 'Positive amounts found {}'.format(amounts_found)
-
         is_equal = 0
         not_equal = 0
         waiting = 0
-        for cod_etu, etu in etu_to_etudiant.items():
-            for ins in etu.inscriptions:
-                if ins.the_wish and ins.amount_payed > 0:
-                    wish = ins.the_wish
-                    # Have to consider only CAPTURED as payed
-                    amount_payed = float(ins.amount_payed)/100.0
-                    theoritical_total = wish.droit_total() + wish.frais_peda()
-                    if not ins.waiting:
-                        if (theoritical_total - amount_payed) >= 0.01:
-                            # print '{} {}'.format((theoritical_total - amount_payed) <= 0.01, (theoritical_total - amount_payed))
-                            not_equal += 1
-                            print '{} Droit: {} Frais: {} ({}) Payed: {} ({})'\
-                                .format(etu.individus[0].code_opi, wish.droit_total(), wish.frais_peda(),
-                                        theoritical_total, amount_payed, ins.amount_payed)
-                        else:
-                            is_equal += 1
-                    elif ins.waiting:
-                        waiting += 1
 
+        for ins in wish_found:
+            try:
+                moyen = ins.wish.paiementallmodel.moyen_paiement
+                if moyen:
+                    update_paiment_par_ins(ins, {'paiment_type': moyen.type})
+            except PaiementAllModel.DoesNotExist, DuckInscriptionPaymentRequest.DoesNotExist:
+                pass
+
+            code_dossier = int(ins.wish.code_dossier)
+            if code_dossier in wish_payed_cb:
+                amounts_found += 1
+                request = wish_payed_cb[code_dossier]
+                total_amount = 0
+                is_waiting = False
+                for i in request['transactionItem']:
+                    if i['transactionStatusLabel'] == 'CAPTURED':
+                        total_amount += int(i['amount'])
+                    elif i['transactionStatusLabel'] in ['WAITING_AUTHORISATION', 'AUTHORISED']:
+                        is_waiting = True
+                    elif i['transactionStatusLabel'] not in ['REFUSED', 'CANCELLED']:
+                        print i['transactionStatusLabel']
+                amount_payed = float(total_amount)/100.0
+                theoritical_total = ins.wish.droit_total() + ins.wish.frais_peda()
+                if not is_waiting:
+                    if (theoritical_total - amount_payed) >= 0.01:
+                        # print '{} {}'.format((theoritical_total - amount_payed) <= 0.01, (theoritical_total - amount_payed))
+                        not_equal += 1
+                        print '{} Droit: {} Frais: {} ({}) Payed: {}'\
+                            .format(ins.individu.code_opi, ins.wish.droit_total(), ins.wish.frais_peda(),
+                                    theoritical_total, amount_payed)
+                    else:
+                        is_equal += 1
+                elif is_waiting:
+                    waiting += 1
+
+                # print total_amount
+
+        print 'Amounts found {}'.format(amounts_found)
         print 'Equal {}'.format(is_equal)
         print 'Waiting {}'.format(waiting)
         print 'Not equal {}'.format(not_equal)
-        return
 
-        weird_cases = 0
-        for cod_etu in etu_to_ind:
-            etudiant_payed = cod_etu in etudiants_cb
-            wish_payed = cod_etu in wishes_cb
-            if etudiant_payed != wish_payed:
-
-                ins = etu_to_ins[int(cod_etu)][0]
-                code_opi = etu_to_ind[cod_etu]['ind'].code_opi
-                print '{} {}, {} {}'.format(cod_etu, code_opi, ins['cod_ind__lib_nom_pat_ind'], ins['cod_ind__lib_pr1_ind'])
-
-                weird_cases += 1
-
-        print 'Weird CB cases: {}'.format(weird_cases)
-
-
-
-        # print InsAdmEtpInitial._meta.db_table
-#         cursor = connections['oracle'].cursor()
-#         inscriptions = cursor.execute("""
-# SELECT "INS_ADM_ETP"."COD_ANU", "INS_ADM_ETP"."COD_IND" cod_ind,
-#  "INS_ADM_ETP"."COD_ETP", "INS_ADM_ETP"."COD_VRS_VET", "INS_ADM_ETP"."NUM_OCC_IAE", "INS_ADM_ETP"."COD_DIP",
-#   "INS_ADM_ETP"."COD_CGE", "INS_ADM_ETP"."DAT_CRE_IAE", "INS_ADM_ETP"."DAT_MOD_IAE", "INS_ADM_ETP"."NBR_INS_CYC",
-#   "INS_ADM_ETP"."NBR_INS_ETP", "INS_ADM_ETP"."DAT_ANNUL_RES_IAE", "INS_ADM_ETP"."TEM_IAE_PRM", "INS_ADM_ETP"."NBR_INS_DIP",
-#    "INS_ADM_ETP"."ETA_IAE", "INS_ADM_ETP"."ETA_PMT_IAE", "INS_ADM_ETP"."COD_PRU", "INS_ADM_ETP"."COD_VRS_VDI"
-#     FROM "INS_ADM_ETP" WHERE cod_anu=2015 and cod_cge='IED'""")
-
-        # for result in inscriptions:
-        #     print result
+        # pprint(vars(o))
