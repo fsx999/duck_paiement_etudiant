@@ -297,7 +297,7 @@ def download_payment_info(individus, pickle_file):
         wish_cb = pickle.load(open(pickle_file, "rb"))
 
     added = 0
-    for ind in individus:
+    for i, ind in enumerate(individus):
         for wish in ind.wishes.all():
             dossier = int(wish.code_dossier)
             if dossier not in wish_cb:
