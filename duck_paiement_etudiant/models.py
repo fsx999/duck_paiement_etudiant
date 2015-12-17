@@ -476,7 +476,7 @@ class PaiementParInscription(models.Model):
     cod_etu = models.CharField(max_length=10)
     individu = models.ForeignKey(Individu2, null=True)
     wish = models.ForeignKey(Wish, null=True, unique=True)
-    montant_paye = models.IntegerField(null=True)
+    montant_paye = models.FloatField(null=True)
     paiment_type = models.CharField(u"Paiement Type", null=True, max_length=3)
     bordereau = models.IntegerField(null=True)
 

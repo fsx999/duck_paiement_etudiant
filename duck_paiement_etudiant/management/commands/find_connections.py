@@ -302,7 +302,7 @@ def download_payment_info(individus, pickle_file):
             dossier = int(wish.code_dossier)
             if dossier not in wish_cb:
                 try:
-                    print '{}: {}'.format(i, ind)
+                    # print '{}: {}'.format(i, ind)
                     paiement = wish.paiementallmodel
                     moyen = paiement.moyen_paiement
                     if moyen and moyen.type == 'CB':
@@ -380,7 +380,8 @@ class Command(BaseCommand):
 
         # STEP 5: Associate students with the amount they payed by CB
 
-        wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
+        wish_found = PaiementParInscription.objects\
+            .filter(individu__isnull=False, wish__isnull=False, bordereau__isnull=True)
 
         amounts_found = 0
         is_equal = 0
