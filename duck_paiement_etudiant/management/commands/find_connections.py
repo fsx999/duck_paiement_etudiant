@@ -302,7 +302,7 @@ def download_payment_info(individus, pickle_file):
             dossier = int(wish.code_dossier)
             if dossier not in wish_cb:
                 try:
-                    # print '{}: {}'.format(i, ind)
+                    print '{}: {}'.format(i, ind)
                     paiement = wish.paiementallmodel
                     moyen = paiement.moyen_paiement
                     if moyen and moyen.type == 'CB':
@@ -314,14 +314,17 @@ def download_payment_info(individus, pickle_file):
                         # print to_dict(status)
 
                         added += 1
-                        print 'Save CB pickle'
-                        pickle.dump(wish_cb, open(pickle_file, "wb"))
+
+                        # print 'Save CB pickle'
+                        # pickle.dump(wish_cb, open(pickle_file, "wb"))
 
                 except PaiementAllModel.DoesNotExist:
                     continue
                 except DuckInscriptionPaymentRequest.DoesNotExist:
                     continue
 
+    print 'Save CB pickle'
+    pickle.dump(wish_cb, open(pickle_file, "wb"))
     return wish_cb
 
 
