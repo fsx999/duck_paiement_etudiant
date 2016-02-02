@@ -15,7 +15,7 @@ def create_bordereau():
     else:
         max_bor += 1
     print max_bor
-    PaiementParInscription.objects.filter(wish__isnull=False, montant_paye__isnull=False, bordereau_isnull=True, paiment_type='CB')\
+    PaiementParInscription.objects.filter(wish__isnull=False, montant_paye__isnull=False, bordereau__isnull=True, paiment_type='CB')\
         .update(bordereau=max_bor)
 
 
@@ -24,7 +24,8 @@ def imprimer_bordereau(bordereau_number):
     if bordereaux.count():
         print 'Printing bordereau {}'.format(bordereau_number)
         total = 0
-        data = [['#', 'Numero de commande', 'Nom', 'Prenom', 'Code etudiant', 'Code etape', 'Annee', 'Montant paye']]
+        data = [['#', 'Numero de commande', 'Nom', 'Prenom', 'Code etudiant', 'Code etape', 'Annee', 'Montant paye',
+                 'Date du dernier encaissement']]
         for i, ins in enumerate(bordereaux):
             total += int(ins.montant_paye)
             data.append([i+1, ins.num_commande, ins.nom, ins.prenom, ins.cod_etu, ins.cod_etp, ins.annee, ins.montant_paye])
@@ -84,6 +85,6 @@ class Command(BaseCommand):
 
         if options['create']:
             print 'Create borderau'
-            # create_bordereau()
+            create_bordereau()
 
         # print_statistics()
