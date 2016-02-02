@@ -483,7 +483,9 @@ class PaiementParInscription(models.Model):
     nom = models.CharField(max_length=255, null=True)
     prenom = models.CharField(max_length=255, null=True)
     annee = models.IntegerField(null=True)
-    num_commande = models.ForeignKey(DuckInscriptionPaymentRequest, null=True)
+    num_commande = models.IntegerField(null=True)
+    date_encaissement = models.DateTimeField(null=True)
+    is_partiel = models.BooleanField(u'Is the paiement partial? (there was an error in one of the payments)', default=False)
 
 
 
