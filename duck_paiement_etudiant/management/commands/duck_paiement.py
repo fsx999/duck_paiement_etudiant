@@ -20,5 +20,5 @@ class Command(BaseCommand):
             b.tarif = s.frais
             b.demi_tarif  = s.demi_tarif
             b.demi_annee = s.semestre
-            b.nb_paiement_max = s.nb_paiement
+            b.nb_paiment_max = s.nb_paiement
             b.save()
