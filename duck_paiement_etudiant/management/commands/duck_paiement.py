@@ -15,7 +15,8 @@ class Command(BaseCommand):
             SettingEtapePaiement.objects.get_or_create(etape=etape, cod_anu=2015)
 
         for s in SettingsEtape.objects.all():
-            b = s.settings_etape_paiement.get(cod_anu=2015)
+            b = SettingEtapePaiement.objects.get_or_create(etape=Etape.objects.get(cod_etp=s.cod_etp), cod_anu=s.annee.cod_anu)[0]
+            # b = s.settings_etape_paiement.get(cod_anu=2015)
             b.tarif = s.frais
             b.demi_tarif  = s.demi_tarif
             b.demi_annee = s.semestre
