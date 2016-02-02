@@ -418,8 +418,8 @@ def parse_amounts(request):
     total_amount_waiting = 0
     last_date = None
 
-    if len(request['transactionItem']) > 3:
-        pprint(dict(request))
+    # if len(request['transactionItem']) > 3:
+    #     pprint(dict(request))
     for i, info in enumerate(request['transactionItem']):
         if info['transactionStatusLabel'] == 'CAPTURED':
             total_amount += float(info['amount'])/100.0
@@ -434,7 +434,7 @@ def parse_amounts(request):
         if i == 0 or current_date > last_date:
             last_date = current_date
 
-    print last_date
+    # print last_date
 
     return total_amount, total_amount_waiting, last_date
 
