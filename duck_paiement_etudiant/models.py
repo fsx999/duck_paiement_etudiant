@@ -11,6 +11,7 @@ from django.template import Template, Context
 from django.template.loader import render_to_string
 from django.utils.encoding import python_2_unicode_compatible
 from duck_inscription.models import Wish, Individu as Individu2
+from duck_inscription_payzen.models import DuckInscriptionPaymentRequest
 from mailrobot.models import MailBody, Mail
 from duck_utils.utils import email_ied, get_recipients
 from foad.models import AuditeurLibreApogee
@@ -482,7 +483,7 @@ class PaiementParInscription(models.Model):
     nom = models.CharField(max_length=255, null=True)
     prenom = models.CharField(max_length=255, null=True)
     annee = models.IntegerField(null=True)
-    num_commande = models.IntegerField(null=True)
+    num_commande = models.ForeignKey(DuckInscriptionPaymentRequest, null=True)
 
 
 

@@ -241,8 +241,13 @@ def find_correspondance_to_wish(wish_not_found):
                     print '{}. {}'.format(i+1, wish)
                 choice = give_options(1, len(wishes)) - 1
                 print 'Saved successfully'
-
-            update_paiment_par_ins(ins, {'wish': wishes[choice]})
+            wish = wishes[choice]
+            num_commande = None
+            try:
+                num_commande = wish.paiementallmodel.pk
+            except:
+                pass
+            update_paiment_par_ins(ins, {'wish': wish, 'num_commande': num_commande})
 
 
 def to_dict(obj):
@@ -271,11 +276,13 @@ def add_missing_ins():
     Adds missing inscriptions to the table PaiementParInscription
     :return:
     '''
-    inscriptions = get_inscriptions(True, 'etudiants.pickle')
+    inscriptions = get_inscriptions(False, 'etudiants.pickle')
     etu_to_etudiant = get_etudiants(inscriptions)
     for cod_etu, etu in etu_to_etudiant.items():
         for ins in etu.inscriptions:
-            update_paiment_par_ins(ins, {'cod_etu': cod_etu})
+            nom = etu.inscriptions[0].last_name
+            prenom = etu.inscriptions[0].first_name1
+            update_paiment_par_ins(ins, {'cod_etu': cod_etu, 'nom': nom, 'prenom': prenom, 'annee': 2015})
 
     etu_double_cursus = sum(len(x.inscriptions) > 1 for x in etu_to_etudiant.values())
     print 'Double cursus: {}'.format(etu_double_cursus)
@@ -426,21 +433,19 @@ class Command(BaseCommand):
 
                 # print total_amount
 
-        info_cb = PaiementParInscription.objects.filter()
-        for ins in info_cb:
-            nom = etu_to_etudiant[int(ins.cod_etu)].inscriptions[0].last_name
-            prenom = etu_to_etudiant[int(ins.cod_etu)].inscriptions[0].first_name1
-            num_commande = None
-            if ins.wish:
-                try:
-                    num_commande = ins.wish.paiementallmodel.pk
-                except:
-                    pass
-
-            update_paiment_par_ins(ins, {
-                'nom': nom, 'prenom': prenom,
-                'annee': 2015, 'num_commande': num_commande
-            })
+        # info_cb = PaiementParInscription.objects.filter()
+        # for ins in info_cb:
+        #     wish = ins.wish
+        #     num_commande = None
+        #     if wish:
+        #         try:
+        #             num_commande = ins.wish.paiementallmodel.paiement_request.pk
+        #         except:
+        #             pass
+        #     print ins.cod_etu
+        #     update_paiment_par_ins(ins, {
+        #         'num_commande': num_commande
+        #     })
 
         print 'Amounts found {}'.format(amounts_found)
         print 'Equal {}'.format(is_equal)

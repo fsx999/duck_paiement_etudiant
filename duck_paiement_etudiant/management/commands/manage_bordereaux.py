@@ -22,9 +22,9 @@ def create_bordereau():
 def imprimer_bordereau(bordereau_number):
     bordereaux = PaiementParInscription.objects.filter(bordereau=bordereau_number)
 
-    data = []
-    for ins in bordereaux:
-        data.append([ins.cod_etu, ins.montant_paye])
+    data = [['#', 'Numero de commande', 'Nom', 'Prenom', 'Code etudiant', 'Code etape', 'Annee', 'Montant paye']]
+    for i, ins in enumerate(bordereaux):
+        data.append([i+1, ins.num_commande, ins.nom, ins.prenom, ins.cod_etu, ins.cod_etp, ins.annee, ins.montant_paye])
 
     filename = 'bordereau_{}.xls'.format(bordereau_number)
     save_worksheet(filename, data)
