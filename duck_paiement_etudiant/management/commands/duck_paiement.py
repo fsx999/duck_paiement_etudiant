@@ -12,10 +12,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
 
         for etape in Etape.objects.by_centre_gestion('IED'):
-            SettingEtapePaiement.objects.get_or_create(etape=etape, cod_anu=2014)
+            SettingEtapePaiement.objects.get_or_create(etape=etape, cod_anu=2015)
 
-        for s in SettingsEtape.objects.filter(annee_id='2014'):
-            b = s.settings_etape_paiement.get(cod_anu=2014)
+        for s in SettingsEtape.objects.filter(annee_id='2015'):
+            b = s.settings_etape_paiement.get(cod_anu=2015)
             b.tarif = s.frais
             b.demi_tarif  = s.demi_tarif
             b.demi_annee = s.semestre
