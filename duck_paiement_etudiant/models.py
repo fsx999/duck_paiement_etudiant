@@ -477,7 +477,15 @@ class PaiementParInscription(models.Model):
     cod_etu = models.CharField(max_length=10)
     individu = models.ForeignKey(Individu2, null=True)
     wish = models.ForeignKey(Wish, null=True, unique=True)
+
+    # DEPRECIATED: This value is not accurate and should not be used
+    # Use get_frais_paye() instead
     montant_paye = models.FloatField(null=True)
+    frais = models.FloatField(null=True)
+    droits = models.FloatField(null=True)
+    montant_recu = models.FloatField(null=True)
+    montant_rembourse = models.FloatField(null=True)
+
     paiment_type = models.CharField(u"Paiement Type", null=True, max_length=3)
     bordereau = models.IntegerField(null=True)
     nom = models.CharField(max_length=255, null=True)

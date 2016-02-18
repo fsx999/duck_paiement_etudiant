@@ -25,10 +25,11 @@ def imprimer_bordereau(bordereau_number):
         print 'Printing bordereau {}'.format(bordereau_number)
         total = 0
         data = [['#', 'Numero de commande', 'Nom', 'Prenom', 'Code etudiant', 'Code etape', 'Annee', 'Montant paye',
-                 'Date du dernier encaissement']]
+                 'Date du dernier encaissement', 'Paiement partiel']]
         for i, ins in enumerate(bordereaux):
             total += int(ins.montant_paye)
-            data.append([i+1, ins.num_commande, ins.nom, ins.prenom, ins.cod_etu, ins.cod_etp, ins.annee, ins.montant_paye])
+            data.append([i+1, ins.num_commande, ins.nom, ins.prenom, ins.cod_etu, ins.cod_etp, ins.annee,
+                         ins.montant_paye, ins.date_encaissement.strftime('%d/%m/%Y'), ins.is_partiel])
         data.append([total])
         filename = '/vagrant/bordereau_{}.xls'.format(bordereau_number)
         save_worksheet(filename, data)

@@ -11,7 +11,7 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count, Q, F
 from duck_inscription.models import Individu, Wish
 from django_apogee.models import InsAdmEtpInitial
-from django_apogee.utils import flatten
+from duck_scripts.utils import flatten
 
 
 class Inscription:
@@ -112,10 +112,6 @@ def get_etudiants(inscriptions):
         etu_primary_ins[cod_etu] = Etudiant(inscriptions)
 
     return etu_primary_ins
-
-
-# def is_same(string1, string2):
-#     return flatten(string1) == flatten(string2)
 
 
 def is_same_person(i, e):
@@ -298,31 +294,31 @@ def find_correspondance_to_wish(wish_not_found):
             print 'Saved successfully'
 
 
-def to_dict(obj):
-    '''
-    Converts payment request object to dictionary
-    :param obj: Payment request object
-    :return: Dictionary that contains the info we need from the payment request object
-    '''
-
-    nobj = {}
-
-    for key, value in obj.items():
-        # print '{} - {}'.format(key, value)
-        if key == 'requestId':
-            nobj[key] = str(value)
-        elif key == 'orderResponse':
-            nobj[key] = dict(value)
-            nobj[key]['extInfo'] = []
-            for v in nobj[key]['extInfo']:
-                nobj[key]['extInfo'].append(dict(v))
-        elif type(value) == list:
-            nobj[key] = []
-            for v in value:
-                nobj[key].append(dict(v))
-        else:
-            nobj[key] = dict(value)
-    return nobj
+# def to_dict(obj):
+#     '''
+#     Converts payment request object to dictionary
+#     :param obj: Payment request object
+#     :return: Dictionary that contains the info we need from the payment request object
+#     '''
+#
+#     nobj = {}
+#
+#     for key, value in obj.items():
+#         # print '{} - {}'.format(key, value)
+#         if key == 'requestId':
+#             nobj[key] = str(value)
+#         elif key == 'orderResponse':
+#             nobj[key] = dict(value)
+#             nobj[key]['extInfo'] = []
+#             for v in nobj[key]['extInfo']:
+#                 nobj[key]['extInfo'].append(dict(v))
+#         elif type(value) == list:
+#             nobj[key] = []
+#             for v in value:
+#                 nobj[key].append(dict(v))
+#         else:
+#             nobj[key] = dict(value)
+#     return nobj
 
 
 def add_missing_ins():
@@ -363,13 +359,48 @@ def update_paiment_par_ins(ins, defaults):
         print vars(ins)
 
 
-def download_payment_info(individus, pickle_file):
+def download_payment(wish):
+    '''
+    Download all info for one payment, inclouding the info about reimbursements and installments
+    if the payment was done in installments.
+    :param wish: Instance of the Wish model
+    :return: List of transactions in the payment
+    '''
+
+    request = wish.paiementallmodel.paiement_request
+    status = request.status_paiement()
+
+    if status['commonResponse']['responseCode'] != 0:
+        if status['commonResponse']['responseCode'] != 10:
+            # 10 is the code for transaction not found
+            print 'Thats a very weird code: ' + status['commonResponse']['responseCode']
+        return None
+
+    payments = []
+    for item in status['transactionItem']:
+        uuid = item['transactionUuid']
+        transaction = request.payment_details(uuid)
+        keep_info = {
+            'amount': transaction['paymentResponse']['amount'],
+            'operationType': transaction['paymentResponse']['operationType'],
+            'expectedCaptureDate': transaction['paymentResponse']['expectedCaptureDate'],
+            'transactionStatusLabel': transaction['commonResponse']['transactionStatusLabel']
+        }
+        payments.append(keep_info)
+
+        print 'Operation type: {}'.format(keep_info['operationType'])
+
+    return payments
+
+
+def download_transactions(individus, pickle_file):
     '''
     Downloads payment info for all individus and saves them in the pickle_file
     :param individus: Queryset of individus of which the payment info will be downloaded
     :param pickle_file: Filename to save the payment info downloaded
     :return: A dictionary with all the payment info, [wish code dossier] --> Dictionary of Payment info
     '''
+
     wish_cb = {}
     if os.path.isfile(pickle_file):
         wish_cb = pickle.load(open(pickle_file, "rb"))
@@ -378,18 +409,17 @@ def download_payment_info(individus, pickle_file):
     for i, ind in enumerate(individus):
         for wish in ind.wishes.all():
             dossier = int(wish.code_dossier)
-            if dossier not in wish_cb:
+            # TODO Reactivate this line
+            # if dossier not in wish_cb or dossier == 10026851:
+            if dossier == 10029519:
                 try:
                     # print '{}: {}'.format(i, ind)
                     paiement = wish.paiementallmodel
                     moyen = paiement.moyen_paiement
                     if moyen and moyen.type == 'CB':
-                        request = paiement.paiement_request
-                        status = dict(request.status_paiement())
-                        # print status
-                        wish_cb[dossier] = to_dict(status)
-                        # print type(status)
-                        # print to_dict(status)
+                        payment = download_payment(wish)
+                        if payment:
+                            wish_cb[dossier] = payment
 
                         added += 1
 
@@ -403,40 +433,47 @@ def download_payment_info(individus, pickle_file):
                 except DuckInscriptionPaymentRequest.DoesNotExist:
                     continue
 
+    print 'Added: {}'.format(added)
     print 'Save CB pickle'
     pickle.dump(wish_cb, open(pickle_file, "wb"))
     return wish_cb
 
 
-def parse_amounts(request):
+# TODO Pass wish_cb to new version
+def parse_amounts(transactions):
     '''
     Calculates total amount payed in a payment request
-    :param request: The dictionary of a payment request
+    :param transactions: The dictionary of a payment request
     :return: A tuple containing the total amount captured, and the total amount waiting authorisation to be payed
     '''
-    total_amount = 0
+    total_amount_captured = 0
+    total_amount_reimbursed = 0
     total_amount_waiting = 0
     last_date = None
 
     # if len(request['transactionItem']) > 3:
     #     pprint(dict(request))
-    for i, info in enumerate(request['transactionItem']):
-        if info['transactionStatusLabel'] == 'CAPTURED':
-            total_amount += float(info['amount'])/100.0
-        elif info['transactionStatusLabel'] in ['WAITING_AUTHORISATION', 'AUTHORISED']:
+    for i, transaction in enumerate(transactions):
+        if transaction['transactionStatusLabel'] == 'CAPTURED':
+            amount = float(transaction['amount'])/100.0
+            if transaction['operationType'] == 0:
+                total_amount_captured += amount
+            else:
+                total_amount_reimbursed += amount
+        elif transaction['transactionStatusLabel'] in ['WAITING_AUTHORISATION', 'AUTHORISED']:
             # Is this calculation even correct? Commented is the original calculation which seemed wrong
             # total_amount_waiting += float(i['amount'])/100.0 - ins.wish.droit_total()
-            total_amount_waiting += float(info['amount'])/100.0
-        elif info['transactionStatusLabel'] not in ['REFUSED', 'CANCELLED']:
-            print info['transactionStatusLabel']
+            total_amount_waiting += float(transaction['amount'])/100.0
+        elif transaction['transactionStatusLabel'] not in ['REFUSED', 'CANCELLED']:
+            print transaction['transactionStatusLabel']
 
-        current_date = info['expectedCaptureDate']
+        current_date = transaction['expectedCaptureDate']
         if i == 0 or current_date > last_date:
             last_date = current_date
 
     # print last_date
 
-    return total_amount, total_amount_waiting, last_date
+    return total_amount_captured, total_amount_waiting, total_amount_reimbursed, last_date
 
 
 def is_equal_to_theory(wish, amount_payed):
@@ -448,19 +485,19 @@ def is_equal_to_theory(wish, amount_payed):
     1 centime.
     '''
     theoritical_total = wish.droit_total() + wish.frais_peda()
-    return (theoritical_total - amount_payed) <= 0.01
+    return abs(theoritical_total - amount_payed) <= 0.01
 
 
-def is_reimbursed(wish, amount_payed):
-    '''
-    Returns true if the frais pedagogiques were reimbursed to the student
-    :param wish: Instance of the Wish model
-    :param amount_payed: The amount payed by CB (includes the amount reimbursed)
-    :return: True if the frais pedagogiques were reimbursed to the student
-    '''
-    theoritical_total = wish.droit_total() + 2 * wish.frais_peda()
-    theoritical_total_2 = 2 * wish.droit_total() + 2 * wish.frais_peda()
-    return (theoritical_total - amount_payed) <= 0.01 or (theoritical_total_2 - amount_payed) <= 0.02
+# def is_reimbursed(wish, amount_payed):
+#     '''
+#     Returns true if the frais pedagogiques were reimbursed to the student
+#     :param wish: Instance of the Wish model
+#     :param amount_payed: The amount payed by CB (includes the amount reimbursed)
+#     :return: True if the frais pedagogiques were reimbursed to the student
+#     '''
+#     theoritical_total = wish.droit_total() + 2 * wish.frais_peda()
+#     theoritical_total_2 = 2 * wish.droit_total() + 2 * wish.frais_peda()
+#     return (theoritical_total - amount_payed) <= 0.01 or (theoritical_total_2 - amount_payed) <= 0.02
 
 
 def find_amount_payed(wish_payed_cb):
@@ -479,6 +516,7 @@ def find_amount_payed(wish_payed_cb):
 
     total_amount_with_error = 0
     total_amount_waiting = 0
+    total_amount_reimbursed = 0
     total_amount_payed = 0
 
     for ins in wish_found:
@@ -493,7 +531,7 @@ def find_amount_payed(wish_payed_cb):
         if code_dossier in wish_payed_cb:
             amounts_found += 1
 
-            amount_payed, amount_waiting, last_date = parse_amounts(wish_payed_cb[code_dossier])
+            amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(wish_payed_cb[code_dossier])
             is_waiting = True if amount_waiting > 0 else False
 
             if not is_waiting:
@@ -511,14 +549,15 @@ def find_amount_payed(wish_payed_cb):
                     update_paiment_par_ins(ins, {'montant_paye': amount_payed - ins.wish.droit_total(),
                                                  'date_encaissement': last_date})
                     total_amount_payed += amount_payed - ins.wish.droit_total()
+                    total_amount_reimbursed += amount_reimbursed
                     is_equal += 1
             elif is_waiting:
                 total_amount_waiting += amount_waiting
                 waiting += 1
 
             # print total_amount
-    print 'Total amount payed {}, Total amount waiting {}, total amount with error {}'.\
-        format(total_amount_payed, total_amount_waiting, total_amount_with_error)
+    print 'Total amount payed {}, Total amount waiting {}, Total amount reimbursed {}, total amount with error {}'.\
+        format(total_amount_payed, total_amount_waiting, total_amount_reimbursed, total_amount_with_error)
 
     print 'Amounts found {}'.format(amounts_found)
     print 'Equal {}'.format(is_equal)
@@ -545,10 +584,11 @@ def find_missing_transactions(wish_cb):
 
     for dossier, info_cb in wish_cb.items():
         if dossier not in dossier_to_paiement:
-            amount_payed, amount_waiting, last_date = parse_amounts(info_cb)
+            amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(info_cb)
             if amount_payed > 0:
                 wish = Wish.objects.get(code_dossier=dossier)
-                if is_reimbursed(wish, amount_payed):
+                # TODO Check if the remboursement was complete or partial
+                if amount_reimbursed > 0:
                     reimbursed += 1
                 elif str(wish.suivi_dossier) in ['inscription_refuse', 'inscription_annule', 'inscription_incomplet',
                                                'inscription_incom_r', 'inactif']:
@@ -566,6 +606,57 @@ def find_missing_transactions(wish_cb):
     print 'Not payed {}, Reimbursed {}, Errors {}, Other: {}'.format(not_payed, reimbursed, errors, other)
 
 
+def paied_too_much(wish, amount_payed):
+    '''
+    Return true if the person has payed more than the theoritical amount
+    :param wish: Instance of the Wish model
+    :param amount_payed: The amount payed by CB
+    :return:
+    '''
+    theoritical_total = wish.droit_total() + wish.frais_peda()
+    return amount_payed > theoritical_total
+
+
+def find_abnormal_paiements(wish_payed_cb):
+    paiements = PaiementParInscription.objects.filter(montant_paye__isnull=False)
+    partial = PaiementParInscription.objects.filter(montant_paye__isnull=False, is_partiel=True).count()
+    print 'Total number of amounts found {}'.format(paiements.count())
+    too_much = 0
+    equal = 0
+    is_too_much = False
+    changed = 0
+    for paiement in paiements:
+        wish = paiement.wish
+        paye = paiement.montant_paye
+        if paied_too_much(wish, paye + wish.droit_total()):
+            too_much += 1
+            is_too_much = True
+            print 'Code dossier: {}'.format(wish.code_dossier)
+            # if wish.code_dossier == 10032481:
+            #     pprint(dict(wish_payed_cb[wish.code_dossier]))
+            # pprint(vars(paiement))
+        if is_equal_to_theory(wish, paye + wish.droit_total()):
+            equal += 1
+            if is_too_much:
+                print 'WTF?????????????'
+        # TODO Remove this line
+        if int(wish.code_dossier) != 10029519:
+            return
+        else:
+            print 'Here we are'
+        paye_now = parse_amounts(wish_payed_cb[wish.code_dossier])[0] - wish.droit_total()
+        if abs(paye_now - paye) > 0.1:
+            # pprint(vars(paiement))
+            # print 'Now: {}, Past: {}'.format(paye_now, paye)
+            changed += 1
+
+        is_too_much = False
+
+    print 'Too much: {}, Equal: {}, Partial (Too little): {}'.format(too_much, equal, partial)
+    print 'Total: {}'.format(too_much+equal+partial)
+    print 'Changed over time: {}'.format(changed)
+
+
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
@@ -580,14 +671,14 @@ class Command(BaseCommand):
 
         # STEP 1: Add inscriptions that are missing from the PaiementParInscription table
         print 'Step 1'
-        etu_to_etudiant = add_missing_ins()
+        # etu_to_etudiant = add_missing_ins()
         ins_paiement = PaiementParInscription.objects.filter(wish__isnull=True)
         print 'Nouveaux Inscriptions: {}'.format(ins_paiement.count())
 
         # STEP 2: Find correspondance between an inscription and an individu
         print 'Step 2'
         no_ind = ins_paiement.filter(individu__isnull=True).values('cod_etu')
-        find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind)
+        # find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind)
 
         etudiants_not_found = PaiementParInscription.objects.filter(individu__isnull=True).count()
         etudiants_found = PaiementParInscription.objects.filter(individu__isnull=False).count()
@@ -599,7 +690,7 @@ class Command(BaseCommand):
         wish_not_found = PaiementParInscription.objects.select_related('individu')\
             .filter(individu__isnull=False, wish__isnull=True, bordereau__isnull=True)
 
-        find_correspondance_to_wish(wish_not_found)
+        # find_correspondance_to_wish(wish_not_found)
 
         wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
         wish_not_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=True)
@@ -608,27 +699,21 @@ class Command(BaseCommand):
 
         # STEP 4: Download all payment info and save them in a pickle
         print 'Step 4'
-        wish_cb = download_payment_info(individus, 'info_cb2.pickle')
+        wish_cb = download_transactions(individus, 'info_cb2.pickle')
 
-        wish_payed_cb = {}
-        for code_dossier, info_cb in wish_cb.items():
-            if info_cb['commonResponse']['responseCode'] == 0:
-                wish_payed_cb[code_dossier] = info_cb
-            elif info_cb['commonResponse']['responseCode'] != 10:
-                # 10 is the code for transaction not found
-                print 'Thats a very weird code: ' + info_cb['commonResponse']['responseCode']
-
-        print 'Total wishes with cb: {}'.format(len(wish_cb))
-        print 'Total wishes payed with cb: {}'.format(len(wish_payed_cb))
+        print 'Total wishes payed with cb: {}'.format(len(wish_cb))
 
         # STEP 5: Associate students with the amount they payed by CB
         print 'Step 5'
-        find_amount_payed(wish_payed_cb)
+        # find_amount_payed(wish_payed_cb)
 
 
         # STEP 6: Find transactions that are not in the PaiementParInscription table
         print 'Step 6'
-        find_missing_transactions(wish_payed_cb)
+        find_missing_transactions(wish_cb)
+
+        print 'Step 7'
+        find_abnormal_paiements(wish_cb)
 
         # info_1 = wish_payed_cb.values()[0]
         # pprint(dict(info_1))
