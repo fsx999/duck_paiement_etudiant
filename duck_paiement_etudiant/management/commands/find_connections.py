@@ -4,6 +4,7 @@ from datetime import datetime
 from django.db import connections
 from pprint import pprint
 from duck_inscription_payzen.models import PaiementAllModel, DuckInscriptionPaymentRequest
+from unidecode import unidecode
 from duck_paiement_etudiant.models import PaiementParInscription
 from duck_recruitment.models import SettingsEtapes
 import os
@@ -11,7 +12,16 @@ from django.core.management.base import BaseCommand
 from django.db.models import Count, Q, F
 from duck_inscription.models import Individu, Wish
 from django_apogee.models import InsAdmEtpInitial
-from duck_scripts.utils import flatten
+# from duck_scripts.utils import flatten
+
+
+def flatten(argument):
+    '''
+    Takes argument, transforms it to string, removes accents, transforms it to uppercase, and strips trailing spaces
+    :param string: Argument to transform
+    :return: Transformed string
+    '''
+    return unidecode(argument).upper().strip()
 
 
 class Inscription:
