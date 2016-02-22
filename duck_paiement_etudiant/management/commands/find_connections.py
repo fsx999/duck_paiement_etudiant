@@ -262,6 +262,11 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind):
                         update_paiment_par_ins(ins, {'individu': ind_found[0]})
                         print 'Saved successfully'
 
+    etudiants_not_found = PaiementParInscription.objects.filter(individu__isnull=True).count()
+    etudiants_found = PaiementParInscription.objects.filter(individu__isnull=False).count()
+    print 'Etudiants found {}'.format(etudiants_found)
+    print 'Etudiants not found {}'.format(etudiants_not_found)
+
 
 def find_correspondance_to_wish(wish_not_found):
     '''
@@ -293,6 +298,10 @@ def find_correspondance_to_wish(wish_not_found):
             update_paiment_par_ins(ins, {'wish': wish, 'num_commande': num_commande})
             print 'Saved successfully'
 
+    wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
+    wish_not_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=True)
+    print 'Wish found {}'.format(wish_found.count())
+    print 'Wish not found {}'.format(wish_not_found.count())
 
 # def to_dict(obj):
 #     '''
@@ -408,18 +417,18 @@ def download_transactions(individus, pickle_file):
     added = 0
     for i, ind in enumerate(individus):
         for wish in ind.wishes.all():
+            print '{}'.format(i)
             dossier = int(wish.code_dossier)
             # TODO Reactivate this line
-            # if dossier not in wish_cb or dossier == 10026851:
-            if dossier == 10029519:
+            if dossier not in wish_cb or dossier == 10026851:
+            # if dossier == 10029519:
                 try:
                     # print '{}: {}'.format(i, ind)
                     paiement = wish.paiementallmodel
                     moyen = paiement.moyen_paiement
                     if moyen and moyen.type == 'CB':
                         payment = download_payment(wish)
-                        if payment:
-                            wish_cb[dossier] = payment
+                        wish_cb[dossier] = payment
 
                         added += 1
 
@@ -436,7 +445,15 @@ def download_transactions(individus, pickle_file):
     print 'Added: {}'.format(added)
     print 'Save CB pickle'
     pickle.dump(wish_cb, open(pickle_file, "wb"))
-    return wish_cb
+
+    print 'Total wishes with cb selected: {}'.format(len(wish_cb))
+
+    wish_cb_exist = {}
+    for key, value in wish_cb.items():
+        if value:
+            wish_cb_exist[key] = value
+    print 'Total wishes payed with cb: {}'.format(len(wish_cb))
+    return wish_cb_exist
 
 
 # TODO Pass wish_cb to new version
@@ -565,6 +582,23 @@ def find_amount_payed(wish_payed_cb):
     print 'Not equal {}'.format(not_equal)
 
 
+def update_bordereau_1(wish_payed_cb):
+    wish_found = PaiementParInscription.objects.filter(bordereau=1)
+
+    for ins in wish_found:
+        code_dossier = int(ins.wish.code_dossier)
+        amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(wish_payed_cb[code_dossier])
+
+        update_paiment_par_ins(ins, {
+            'date_encaissement': last_date,
+            'droits': ins.wish.droit_total(),
+            'frais': ins.wish.frais_peda(),
+            'montant_recu': amount_payed,
+            'montant_rembourse': amount_reimbursed
+        })
+
+
+
 def find_missing_transactions(wish_cb):
     '''
     Find transactions that are not in the PaiementParInscription table
@@ -669,52 +703,34 @@ class Command(BaseCommand):
         ).distinct()
         print 'Individus: {}'.format(individus.count())
 
-        # STEP 1: Add inscriptions that are missing from the PaiementParInscription table
-        print 'Step 1'
+        print 'Step 1'  # STEP 1: Add inscriptions that are missing from the PaiementParInscription table
         # etu_to_etudiant = add_missing_ins()
         ins_paiement = PaiementParInscription.objects.filter(wish__isnull=True)
         print 'Nouveaux Inscriptions: {}'.format(ins_paiement.count())
-
-        # STEP 2: Find correspondance between an inscription and an individu
-        print 'Step 2'
         no_ind = ins_paiement.filter(individu__isnull=True).values('cod_etu')
+
+        print 'Step 2'  # STEP 2: Find correspondance between an inscription and an individu
         # find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind)
 
-        etudiants_not_found = PaiementParInscription.objects.filter(individu__isnull=True).count()
-        etudiants_found = PaiementParInscription.objects.filter(individu__isnull=False).count()
-        print 'Etudiants found {}'.format(etudiants_found)
-        print 'Etudiants not found {}'.format(etudiants_not_found)
-
-        # STEP 3: Find correspondance between an inscription and a particular wish of the individu
-        print 'Step 3'
+        print 'Step 3'  # STEP 3: Find correspondance between an inscription and a particular wish of the individu
         wish_not_found = PaiementParInscription.objects.select_related('individu')\
             .filter(individu__isnull=False, wish__isnull=True, bordereau__isnull=True)
-
         # find_correspondance_to_wish(wish_not_found)
 
-        wish_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=False)
-        wish_not_found = PaiementParInscription.objects.filter(individu__isnull=False, wish__isnull=True)
-        print 'Wish found {}'.format(wish_found.count())
-        print 'Wish not found {}'.format(wish_not_found.count())
+        print 'Step 4'  # STEP 4: Download all payment info and save them in a pickle
+        wish_cb = download_transactions(individus, 'info_cb3.pickle')
 
-        # STEP 4: Download all payment info and save them in a pickle
-        print 'Step 4'
-        wish_cb = download_transactions(individus, 'info_cb2.pickle')
-
-        print 'Total wishes payed with cb: {}'.format(len(wish_cb))
-
-        # STEP 5: Associate students with the amount they payed by CB
-        print 'Step 5'
+        print 'Step 5'  # STEP 5: Associate students with the amount they payed by CB
         # find_amount_payed(wish_payed_cb)
 
-
-        # STEP 6: Find transactions that are not in the PaiementParInscription table
-        print 'Step 6'
-        find_missing_transactions(wish_cb)
+        print 'Step 6'  # STEP 6: Find transactions that are not in the PaiementParInscription table
+        # find_missing_transactions(wish_cb)
 
         print 'Step 7'
-        find_abnormal_paiements(wish_cb)
+        # find_abnormal_paiements(wish_cb)
 
         # info_1 = wish_payed_cb.values()[0]
         # pprint(dict(info_1))
         # pprint(vars(o))
+
+        # update_bordereau_1(wish_cb)

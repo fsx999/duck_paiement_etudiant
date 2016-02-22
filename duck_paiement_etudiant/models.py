@@ -481,6 +481,7 @@ class PaiementParInscription(models.Model):
     # DEPRECIATED: This value is not accurate and should not be used
     # Use get_frais_paye() instead
     montant_paye = models.FloatField(null=True)
+
     frais = models.FloatField(null=True)
     droits = models.FloatField(null=True)
     montant_recu = models.FloatField(null=True)
@@ -495,6 +496,13 @@ class PaiementParInscription(models.Model):
     date_encaissement = models.DateTimeField(null=True)
     is_partiel = models.BooleanField(u'Is the paiement partial? (there was an error in one of the payments)', default=False)
 
+    def get_frais_paye(self):
+        return self.montant_recu - self.droits
 
+    def get_error_difference(self):
+        # montant_recu is the money we thought we received for the frais
+        # get_frais_paye is the money we really received
+        # The difference is amount of the error
+        return self.montant_recu - self.get_frais_paye()
 
 
