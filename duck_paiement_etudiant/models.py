@@ -497,12 +497,15 @@ class PaiementParInscription(models.Model):
     is_partiel = models.BooleanField(u'Is the paiement partial? (there was an error in one of the payments)', default=False)
 
     def get_frais_paye(self):
-        return self.montant_recu - self.droits
+        if self.montant_recu == self.montant_rembourse:
+            return 0
+        else:
+            return self.montant_recu - self.droits - self.montant_rembourse
 
     def get_error_difference(self):
-        # montant_recu is the money we thought we received for the frais
+        # montant_paye is the money we thought we received for the frais
         # get_frais_paye is the money we really received
         # The difference is amount of the error
-        return self.montant_recu - self.get_frais_paye()
+        return self.montant_paye - self.get_frais_paye()
 
 

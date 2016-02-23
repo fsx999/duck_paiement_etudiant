@@ -608,7 +608,6 @@ def update_bordereau_1(wish_payed_cb):
         })
 
 
-
 def find_missing_transactions(wish_cb):
     '''
     Find transactions that are not in the PaiementParInscription table
@@ -743,4 +742,4 @@ class Command(BaseCommand):
         # pprint(dict(info_1))
         # pprint(vars(o))
 
-        # update_bordereau_1(wish_cb)
+        update_bordereau_1(wish_cb)
