@@ -605,17 +605,17 @@ def find_amount_payed(wish_payed_cb):
     print 'Waiting {}'.format(waiting)
     print 'Not equal {}'.format(not_equal)
 
-
-def update_bordereau_1(wish_payed_cb):
-    wish_found = PaiementParInscription.objects.filter(bordereau=1)
-
-    for ins in wish_found:
-        code_dossier = int(ins.wish.code_dossier)
-        amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(wish_payed_cb[code_dossier])
-
-        update_paiment_par_ins(ins, {
-            'date_encaissement': last_date,
-        })
+#
+# def update_bordereau_1(wish_payed_cb):
+#     wish_found = PaiementParInscription.objects.filter(bordereau=1)
+#
+#     for ins in wish_found:
+#         code_dossier = int(ins.wish.code_dossier)
+#         amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(wish_payed_cb[code_dossier])
+#
+#         update_paiment_par_ins(ins, {
+#             'date_encaissement': last_date,
+#         })
 
 
 def find_missing_transactions(wish_cb):
@@ -746,7 +746,7 @@ class Command(BaseCommand):
         # find_correspondance_to_wish()
 
         print 'STEP 4: Download all payment info and save them in a pickle'
-        wish_cb = download_transactions(individus, 'info_cb3.pickle')
+        wish_cb = download_transactions(individus, 'info_cb4.pickle')
 
         print 'STEP 5: Associate students with the amount they payed by CB'
         # find_amount_payed(wish_cb)
@@ -754,11 +754,10 @@ class Command(BaseCommand):
         print 'STEP 6: Find transactions that are not in the PaiementParInscription table'
         # find_missing_transactions(wish_cb)
 
-        print 'STEP 7' # Not executed yet
+        print 'STEP 7'  # Not executed yet
         # find_abnormal_paiements(wish_cb)
 
         # info_1 = wish_payed_cb.values()[0]
         # pprint(dict(info_1))
         # pprint(vars(o))
 
-        update_bordereau_1(wish_cb)
