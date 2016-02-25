@@ -647,10 +647,10 @@ def find_missing_transactions(wish_cb):
                     reimbursed_fully += 1
                 elif amount_reimbursed > 0:
                     # Remboursement Partiel
-                    print 'Parti | Payed: {}, Waiting: {}, Reimbursed: {}'.format(amount_payed, amount_waiting, amount_reimbursed)
-                    print wish.pk
-                    print wish
-                    print wish.suivi_dossier
+                    print 'Partiel,+{},-{},~{},{},{}'.format(amount_payed, amount_reimbursed, amount_waiting, wish, wish.suivi_dossier)
+                    # print wish.pk
+                    # print wish
+                    # print wish.suivi_dossier
                     reimbursed_partially += 1
                 # elif str(wish.suivi_dossier) in ['inscription_refuse', 'inscription_annule', 'inscription_incomplet',
                 #                                'inscription_incom_r', 'inactif']:
@@ -659,10 +659,10 @@ def find_missing_transactions(wish_cb):
                     # print wish.droit_total() + wish.frais_peda()
                     # print amount_payed
 
-                    print 'Other | Payed: {}, Waiting: {}, Reimbursed: {}'.format(amount_payed, amount_waiting, amount_reimbursed)
-                    print wish.pk
-                    print wish
-                    print wish.suivi_dossier
+                    print 'Other,+{},-{},~{},{},{}'.format(amount_payed, amount_reimbursed, amount_waiting, wish, wish.suivi_dossier)
+                    # print wish.pk
+                    # print wish
+                    # print wish.suivi_dossier
                     other += 1
                     not_reimbursed_yet += amount_payed
             else:
@@ -737,22 +737,22 @@ class Command(BaseCommand):
         print 'Individus: {}'.format(individus.count())
 
         print 'STEP 1: Add inscriptions that are missing from the PaiementParInscription table'
-        # add_missing_ins(etu_to_etudiant)
+        add_missing_ins(etu_to_etudiant)
 
         print 'STEP 2: Find correspondance between an inscription and an individu'
-        # find_correspondance_etu_to_ind(etu_to_etudiant, individus)
+        find_correspondance_etu_to_ind(etu_to_etudiant, individus)
 
         print 'STEP 3: Find correspondance between an inscription and a particular wish of the individu'
-        # find_correspondance_to_wish()
+        find_correspondance_to_wish()
 
         print 'STEP 4: Download all payment info and save them in a pickle'
         wish_cb = download_transactions(individus, 'info_cb4.pickle')
 
         print 'STEP 5: Associate students with the amount they payed by CB'
-        # find_amount_payed(wish_cb)
+        find_amount_payed(wish_cb)
 
         print 'STEP 6: Find transactions that are not in the PaiementParInscription table'
-        # find_missing_transactions(wish_cb)
+        find_missing_transactions(wish_cb)
 
         print 'STEP 7'  # Not executed yet
         # find_abnormal_paiements(wish_cb)
