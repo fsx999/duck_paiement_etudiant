@@ -4,6 +4,7 @@ from datetime import datetime
 from django.db import connections
 from pprint import pprint
 from duck_inscription_payzen.models import PaiementAllModel, DuckInscriptionPaymentRequest
+import sys
 from unidecode import unidecode
 from duck_paiement_etudiant.models import PaiementParInscription
 from duck_recruitment.models import SettingsEtapes
@@ -100,13 +101,13 @@ def get_inscriptions(use_pickle, pickle_file):
     return etudiants
 
 
-def get_etudiants(inscriptions):
+def get_etudiants():
     '''
     Return a dictionary of students. Each student has a list of inscriptions (one per diplome).
-    :param inscriptions: Inscriptions in apogee
     :return: Dictionary: [cod_etu] --> Etudiant instance
     '''
     etu_ins = {}
+    inscriptions = get_inscriptions(False, 'etudiants.pickle')
     for i in inscriptions:
         cod_etu = i['cod_ind__cod_etu']
         inscription = (i, i['cod_etp'])
@@ -233,7 +234,7 @@ def choose_individu(ins, ind_found):
     return choice
 
 
-def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind):
+def find_correspondance_etu_to_ind(etu_to_etudiant, individus):
     '''
     Each student corresponds to a list of individu
     Find which student corresponds at which individu.
@@ -249,6 +250,9 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind):
         individus_etu.setdefault(str(ind.student_code), []).append(ind)
         individus_ine.setdefault(str(ind.ine).upper(), []).append(ind)
     individus_opi = {ind.code_opi: ind for ind in individus}
+
+    no_ind = PaiementParInscription.objects.filter(wish__isnull=True, individu__isnull=True).values('cod_etu')
+
 
     for cod_etu in no_ind:
         cod_etu = int(cod_etu['cod_etu'])
@@ -278,12 +282,15 @@ def find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind):
     print 'Etudiants not found {}'.format(etudiants_not_found)
 
 
-def find_correspondance_to_wish(wish_not_found):
+def find_correspondance_to_wish():
     '''
     Finds corresponding wish to PaiementParInscription that have individu but the wish is missing
     :param wish_not_found: Queryset of paiements that have individu, but don't have a wish
     :return:
     '''
+
+    wish_not_found = PaiementParInscription.objects.select_related('individu')\
+        .filter(individu__isnull=False, wish__isnull=True, bordereau__isnull=True)
     for ins in wish_not_found:
         ind = ins.individu
         wishes = []
@@ -340,13 +347,12 @@ def find_correspondance_to_wish(wish_not_found):
 #     return nobj
 
 
-def add_missing_ins():
+def add_missing_ins(etu_to_etudiant):
     '''
     Adds missing inscriptions to the table PaiementParInscription
+    :param etu_to_etudiant: Dictionary of all students and their inscriptions. [Cod_etu] --> Etudiant
     :return:
     '''
-    inscriptions = get_inscriptions(False, 'etudiants.pickle')
-    etu_to_etudiant = get_etudiants(inscriptions)
     for cod_etu, etu in etu_to_etudiant.items():
         nom = etu.inscriptions[0].last_name
         prenom = etu.inscriptions[0].first_name1
@@ -355,11 +361,11 @@ def add_missing_ins():
 
     etu_double_cursus = sum(len(x.inscriptions) > 1 for x in etu_to_etudiant.values())
     print 'Double cursus: {}'.format(etu_double_cursus)
+    ins_paiement = PaiementParInscription.objects.filter(wish__isnull=True)
+    print 'Nouveaux Inscriptions: {}'.format(ins_paiement.count())
 
-    return etu_to_etudiant
 
-
-def update_paiment_par_ins(ins, defaults):
+def update_paiment_par_ins(ins, defaults, save_montant_paye=False):
     '''
     Update or create a given inscription
     :param ins: Inscription to update or create
@@ -371,11 +377,14 @@ def update_paiment_par_ins(ins, defaults):
             cod_etp=ins.cod_etp, cod_anu=2015, cod_vrs_vet=ins.cod_vrs_vet, num_occ_iae=ins.num_occ_iae,
             cod_ind=ins.cod_ind, defaults=defaults
         )
+        if save_montant_paye:
+            return update_paiment_par_ins(ins, {'montant_paye': inscription[0].get_frais_paye()})
         return inscription
     except:
         # Can fail if for example we enter a wish_id that already exists, as wishes should be unique
         print 'Failed to update paiement par ins'
         print vars(ins)
+        print "Unexpected error: ", sys.exc_info()[0]
 
 
 def download_payment(wish):
@@ -427,7 +436,7 @@ def download_transactions(individus, pickle_file):
     added = 0
     for i, ind in enumerate(individus):
         for wish in ind.wishes.all():
-            print '{}'.format(i)
+            # print '{}'.format(i)
             dossier = int(wish.code_dossier)
             # TODO Reactivate this line
             if dossier not in wish_cb or dossier == 10026851:
@@ -485,6 +494,11 @@ def parse_amounts(transactions):
             amount = float(transaction['amount'])/100.0
             if transaction['operationType'] == 0:
                 total_amount_captured += amount
+
+                current_date = transaction['expectedCaptureDate']
+                if last_date is None or current_date > last_date:
+                    last_date = current_date
+                # print 'Current Date: {} Last Date: {}'.format(current_date, last_date)
             else:
                 total_amount_reimbursed += amount
         elif transaction['transactionStatusLabel'] in ['WAITING_AUTHORISATION', 'AUTHORISED']:
@@ -493,10 +507,6 @@ def parse_amounts(transactions):
             total_amount_waiting += float(transaction['amount'])/100.0
         elif transaction['transactionStatusLabel'] not in ['REFUSED', 'CANCELLED']:
             print transaction['transactionStatusLabel']
-
-        current_date = transaction['expectedCaptureDate']
-        if i == 0 or current_date > last_date:
-            last_date = current_date
 
     # print last_date
 
@@ -560,21 +570,25 @@ def find_amount_payed(wish_payed_cb):
 
             amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(wish_payed_cb[code_dossier])
             is_waiting = True if amount_waiting > 0 else False
-
+            defaults = {
+                'date_encaissement': last_date,
+                'droits': ins.wish.droit_total(),
+                'frais': ins.wish.frais_peda(),
+                'montant_recu': amount_payed,
+                'montant_rembourse': amount_reimbursed
+            }
             if not is_waiting:
                 if not is_equal_to_theory(ins.wish, amount_payed):
                     not_equal += 1
                     total_amount_with_error += amount_payed - ins.wish.droit_total()
-                    print '{} Droit: {} Frais: {} ({}) Payed: {}'\
+                    print 'Partiel: {} Droits: {} Frais: {} ({}) Payed: {}'\
                         .format(ins.individu.code_opi, ins.wish.droit_total(), ins.wish.frais_peda(),
                                 ins.wish.droit_total() + ins.wish.frais_peda(), amount_payed)
                     # I include the not equal to the borderaux, as partial payments
-                    update_paiment_par_ins(ins, {'montant_paye': amount_payed - ins.wish.droit_total(),
-                                                 'date_encaissement': last_date,
-                                                 'is_partiel': True})
+                    defaults['is_partiel'] = True
+                    update_paiment_par_ins(ins, defaults, save_montant_paye=True)
                 else:
-                    update_paiment_par_ins(ins, {'montant_paye': amount_payed - ins.wish.droit_total(),
-                                                 'date_encaissement': last_date})
+                    update_paiment_par_ins(ins, defaults, save_montant_paye=True)
                     total_amount_payed += amount_payed - ins.wish.droit_total()
                     total_amount_reimbursed += amount_reimbursed
                     is_equal += 1
@@ -591,21 +605,17 @@ def find_amount_payed(wish_payed_cb):
     print 'Waiting {}'.format(waiting)
     print 'Not equal {}'.format(not_equal)
 
-
-def update_bordereau_1(wish_payed_cb):
-    wish_found = PaiementParInscription.objects.filter(bordereau=1)
-
-    for ins in wish_found:
-        code_dossier = int(ins.wish.code_dossier)
-        amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(wish_payed_cb[code_dossier])
-
-        update_paiment_par_ins(ins, {
-            'date_encaissement': last_date,
-            'droits': ins.wish.droit_total(),
-            'frais': ins.wish.frais_peda(),
-            'montant_recu': amount_payed,
-            'montant_rembourse': amount_reimbursed
-        })
+#
+# def update_bordereau_1(wish_payed_cb):
+#     wish_found = PaiementParInscription.objects.filter(bordereau=1)
+#
+#     for ins in wish_found:
+#         code_dossier = int(ins.wish.code_dossier)
+#         amount_payed, amount_waiting, amount_reimbursed, last_date = parse_amounts(wish_payed_cb[code_dossier])
+#
+#         update_paiment_par_ins(ins, {
+#             'date_encaissement': last_date,
+#         })
 
 
 def find_missing_transactions(wish_cb):
@@ -621,9 +631,11 @@ def find_missing_transactions(wish_cb):
         dossier_to_paiement[dossier] = paiement
 
     errors = 0
-    reimbursed = 0
+    reimbursed_partially = 0
+    reimbursed_fully = 0
     not_payed = 0
     other = 0
+    not_reimbursed_yet = 0
 
     for dossier, info_cb in wish_cb.items():
         if dossier not in dossier_to_paiement:
@@ -631,22 +643,33 @@ def find_missing_transactions(wish_cb):
             if amount_payed > 0:
                 wish = Wish.objects.get(code_dossier=dossier)
                 # TODO Check if the remboursement was complete or partial
-                if amount_reimbursed > 0:
-                    reimbursed += 1
-                elif str(wish.suivi_dossier) in ['inscription_refuse', 'inscription_annule', 'inscription_incomplet',
-                                               'inscription_incom_r', 'inactif']:
-                    errors += 1
+                if amount_payed == amount_reimbursed:
+                    reimbursed_fully += 1
+                elif amount_reimbursed > 0:
+                    # Remboursement Partiel
+                    print 'Partiel,+{},-{},~{},{},{}'.format(amount_payed, amount_reimbursed, amount_waiting, wish, wish.suivi_dossier)
+                    # print wish.pk
+                    # print wish
+                    # print wish.suivi_dossier
+                    reimbursed_partially += 1
+                # elif str(wish.suivi_dossier) in ['inscription_refuse', 'inscription_annule', 'inscription_incomplet',
+                #                                'inscription_incom_r', 'inactif']:
+                #     errors += 1
                 else:
                     # print wish.droit_total() + wish.frais_peda()
                     # print amount_payed
-                    print wish.pk
-                    print wish
-                    print wish.suivi_dossier
+
+                    print 'Other,+{},-{},~{},{},{}'.format(amount_payed, amount_reimbursed, amount_waiting, wish, wish.suivi_dossier)
+                    # print wish.pk
+                    # print wish
+                    # print wish.suivi_dossier
                     other += 1
+                    not_reimbursed_yet += amount_payed
             else:
                 not_payed += 1
 
-    print 'Not payed {}, Reimbursed {}, Errors {}, Other: {}'.format(not_payed, reimbursed, errors, other)
+    print 'Not payed {}, Reimbursed Partially {}, Reimbursed Fully {}, Other: {}'.format(not_payed, reimbursed_partially, reimbursed_fully, other)
+    print 'Not reimbursed yet: {}'.format(not_reimbursed_yet)
 
 
 def paied_too_much(wish, amount_payed):
@@ -710,36 +733,31 @@ class Command(BaseCommand):
             'wishes__paiementallmodel__paiement_request',
             'wishes__etape'
         ).distinct()
+        etu_to_etudiant = get_etudiants()
         print 'Individus: {}'.format(individus.count())
 
-        print 'Step 1'  # STEP 1: Add inscriptions that are missing from the PaiementParInscription table
-        # etu_to_etudiant = add_missing_ins()
-        ins_paiement = PaiementParInscription.objects.filter(wish__isnull=True)
-        print 'Nouveaux Inscriptions: {}'.format(ins_paiement.count())
-        no_ind = ins_paiement.filter(individu__isnull=True).values('cod_etu')
+        print 'STEP 1: Add inscriptions that are missing from the PaiementParInscription table'
+        add_missing_ins(etu_to_etudiant)
 
-        print 'Step 2'  # STEP 2: Find correspondance between an inscription and an individu
-        # find_correspondance_etu_to_ind(etu_to_etudiant, individus, no_ind)
+        print 'STEP 2: Find correspondance between an inscription and an individu'
+        find_correspondance_etu_to_ind(etu_to_etudiant, individus)
 
-        print 'Step 3'  # STEP 3: Find correspondance between an inscription and a particular wish of the individu
-        wish_not_found = PaiementParInscription.objects.select_related('individu')\
-            .filter(individu__isnull=False, wish__isnull=True, bordereau__isnull=True)
-        # find_correspondance_to_wish(wish_not_found)
+        print 'STEP 3: Find correspondance between an inscription and a particular wish of the individu'
+        find_correspondance_to_wish()
 
-        print 'Step 4'  # STEP 4: Download all payment info and save them in a pickle
-        wish_cb = download_transactions(individus, 'info_cb3.pickle')
+        print 'STEP 4: Download all payment info and save them in a pickle'
+        wish_cb = download_transactions(individus, 'info_cb4.pickle')
 
-        print 'Step 5'  # STEP 5: Associate students with the amount they payed by CB
-        # find_amount_payed(wish_payed_cb)
+        print 'STEP 5: Associate students with the amount they payed by CB'
+        find_amount_payed(wish_cb)
 
-        print 'Step 6'  # STEP 6: Find transactions that are not in the PaiementParInscription table
-        # find_missing_transactions(wish_cb)
+        print 'STEP 6: Find transactions that are not in the PaiementParInscription table'
+        find_missing_transactions(wish_cb)
 
-        print 'Step 7'
+        print 'STEP 7'  # Not executed yet
         # find_abnormal_paiements(wish_cb)
 
         # info_1 = wish_payed_cb.values()[0]
         # pprint(dict(info_1))
         # pprint(vars(o))
 
-        update_bordereau_1(wish_cb)
