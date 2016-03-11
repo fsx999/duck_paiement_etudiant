@@ -1,0 +1,1 @@
+default_app_config = "duck_paiement_etudiant.apps.DuckPaiementEtudiant"
