@@ -26,14 +26,14 @@ class DuckPaiementEtudiant(AppConfig):
         "groups_permissions": [],  # facultatif
         "permissions": [],  # facultatif
     }, ]
-    dashboard_settings = [{
-        "group_label": "Gestion",
-        "icon": 'fa fa-caret-square-o-right',
-        "entries": [{
-            "label": 'Gestion des paiements',
-            "icon": 'fa fa-rocket',
-            "url": '/gestion_financiere/',  # name or url
-            "groups_permissions": ['gestion_paiement_etudiant'],  # facultatif
-            "permissions": [],  # facultatif
-        }]}]
+    # dashboard_settings = [{
+    #     "group_label": "Gestion",
+    #     "icon": 'fa fa-caret-square-o-right',
+    #     "entries": [{
+    #         "label": 'Gestion des paiements',
+    #         "icon": 'fa fa-rocket',
+    #         "url": '/gestion_financiere/',  # name or url
+    #         "groups_permissions": ['gestion_paiement_etudiant'],  # facultatif
+    #         "permissions": [],  # facultatif
+    #     }]}]
 
