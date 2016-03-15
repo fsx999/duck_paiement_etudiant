@@ -36,4 +36,8 @@ class DuckPaiementEtudiant(AppConfig):
     #         "groups_permissions": ['gestion_paiement_etudiant'],  # facultatif
     #         "permissions": [],  # facultatif
     #     }]}]
-
+    def ready(self):
+        from django.conf.urls import url, include
+        self.urls = [
+            url(r'^paiement/', include('duck_paiement_etudiant.urls')),
+        ]
